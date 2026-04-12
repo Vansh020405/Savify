@@ -1,3 +1,5 @@
+import { appCategoryMap } from './appCategoryMap'
+
 const MS_PER_DAY = 86400000
 
 function normalizeText(value = '') {
@@ -10,46 +12,17 @@ function tokenize(value = '') {
   return norm.split(' ').filter(Boolean)
 }
 
-const KEYWORD_CATEGORY_RULES = [
-  {
-    category: 'Food',
-    keywords: ['swiggy', 'zomato', 'uber eats', 'dinner', 'lunch', 'breakfast', 'snack', 'restaurant', 'cafe', 'pizza', 'burger', 'meal', 'food', 'coffee'],
-  },
-  {
-    category: 'Travel',
-    keywords: ['uber', 'ola', 'rapido', 'metro', 'bus', 'train', 'flight', 'fuel', 'petrol', 'diesel', 'cab', 'taxi', 'travel', 'commute', 'ticket'],
-  },
-  {
-    category: 'Shopping',
-    keywords: ['amazon', 'flipkart', 'myntra', 'ajio', 'shopping', 'mall', 'order', 'purchase', 'clothes', 'shoes', 'grocery'],
-  },
-  {
-    category: 'Bills',
-    keywords: ['bill', 'electricity', 'water', 'rent', 'internet', 'wifi', 'broadband', 'phone bill', 'maintenance', 'gas bill'],
-  },
-  {
-    category: 'Subscription',
-    keywords: ['subscription', 'netflix', 'spotify', 'prime', 'hotstar', 'youtube premium', 'apple music', 'renewal'],
-  },
-  {
-    category: 'Health',
-    keywords: ['pharmacy', 'medicine', 'doctor', 'clinic', 'hospital', 'health', 'test', 'lab', 'medical', 'gym'],
-  },
-  {
-    category: 'Entertainment',
-    keywords: ['movie', 'cinema', 'game', 'gaming', 'concert', 'show', 'party', 'entertainment'],
-  },
-]
-
 function predictFromKeywords(normalizedText) {
   if (!normalizedText) return null
 
   let bestCategory = null
   let bestScore = 0
 
-  for (const rule of KEYWORD_CATEGORY_RULES) {
+  for (const rule of appCategoryMap) {
+    const phrases = [...(rule.apps || []), ...(rule.keywords || [])].map((phrase) => normalizeText(phrase))
     let score = 0
-    for (const phrase of rule.keywords) {
+    for (const phrase of phrases) {
+      if (!phrase) continue
       if (normalizedText.includes(phrase)) {
         score += phrase.includes(' ') ? 2 : 1
       }
@@ -68,6 +41,7 @@ function predictFromKeywords(normalizedText) {
     confidence: Math.min(0.92, 0.62 + bestScore * 0.07),
     reason: 'Detected from note keywords',
     alternatives: [],
+    matched: true,
   }
 }
 
@@ -138,11 +112,16 @@ function buildProfiles(expenses) {
   return { categoryStats, merchantMemory }
 }
 
-export function predictCategoryFromText({ text, amount = 0, timestamp = Date.now(), expenses = [] }) {
-  const categories = ['Food', 'Shopping', 'Travel', 'Bills', 'Subscription', 'Health', 'Entertainment', 'Other']
-  const { categoryStats, merchantMemory } = buildProfiles(expenses)
+export function predictCategoryFromText({ text, expenses = [] }) {
+  const { merchantMemory } = buildProfiles(expenses)
+  const rawText = (text || '').trim()
 
-  const normalizedTitle = normalizeText(text)
+  const normalizedTitle = normalizeText(rawText)
+  const keywordPrediction = predictFromKeywords(normalizedTitle)
+  if (keywordPrediction) {
+    return keywordPrediction
+  }
+
   if (normalizedTitle && merchantMemory.has(normalizedTitle)) {
     const exactCategory = merchantMemory.get(normalizedTitle)
     return {
@@ -150,83 +129,26 @@ export function predictCategoryFromText({ text, amount = 0, timestamp = Date.now
       confidence: 0.93,
       reason: 'Learnt from your past similar merchant entry',
       alternatives: [],
+      matched: true,
     }
   }
 
-  const keywordPrediction = predictFromKeywords(normalizedTitle)
-  if (keywordPrediction) {
-    return keywordPrediction
-  }
-
-  const tokens = tokenize(text)
-  if (!tokens.length) {
+  if (!rawText) {
     return {
-      category: 'Other',
+      category: 'Custom',
       confidence: 0,
       reason: 'No note text to infer category',
       alternatives: [],
+      matched: false,
     }
   }
-
-  const vocabSize = Math.max(1, new Set(Object.values(categoryStats).flatMap((s) => Object.keys(s.tokenCounts))).size)
-  const totalLabeled = Object.values(categoryStats).reduce((s, v) => s + v.count, 0)
-
-  if (totalLabeled === 0) {
-    return {
-      category: 'Other',
-      confidence: 0.32,
-      reason: 'Need a few transactions to learn your spending patterns',
-      alternatives: categories.filter((c) => c !== 'Other').slice(0, 3),
-    }
-  }
-
-  const scores = categories.map((category) => {
-    const stats = categoryStats[category]
-    const prior = ((stats?.count || 0) + 1) / (totalLabeled + categories.length)
-    let logScore = Math.log(prior)
-
-    if (stats) {
-      for (const token of tokens) {
-        const tokenCount = stats.tokenCounts[token] || 0
-        const likelihood = (tokenCount + 1) / (stats.tokenTotal + vocabSize)
-        logScore += Math.log(likelihood)
-      }
-
-      const avg = mean(stats.amounts)
-      const sd = stddev(stats.amounts)
-      if (amount > 0 && avg > 0) {
-        const z = sd > 0 ? Math.abs((amount - avg) / sd) : Math.abs(amount - avg) / Math.max(1, avg)
-        logScore += Math.max(-2, 1.5 - z)
-      }
-
-      const bucket = bucketFromHour(new Date(timestamp).getHours())
-      const bucketWeight = (stats.bucketCounts[bucket] || 0) / Math.max(1, stats.count)
-      logScore += bucketWeight
-    }
-
-    return { category, logScore }
-  })
-
-  scores.sort((a, b) => b.logScore - a.logScore)
-
-  const best = scores[0]
-  const second = scores[1]
-  if (second && Math.abs(best.logScore - second.logScore) < 0.01) {
-    return {
-      category: 'Other',
-      confidence: 0.38,
-      reason: 'Could not confidently distinguish category from current data',
-      alternatives: scores.slice(0, 3).map((s) => s.category),
-    }
-  }
-
-  const confidence = second ? Math.min(0.95, Math.max(0.35, 0.5 + (best.logScore - second.logScore) / 6)) : 0.55
 
   return {
-    category: best.category,
-    confidence,
-    reason: confidence > 0.7 ? 'Strong match from your spending patterns' : 'Estimated from your recent behavior patterns',
-    alternatives: scores.slice(1, 3).map((s) => s.category),
+    category: rawText,
+    confidence: 0,
+    reason: 'No clear app or keyword match; kept as custom input',
+    alternatives: [],
+    matched: false,
   }
 }
 

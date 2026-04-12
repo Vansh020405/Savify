@@ -8,7 +8,7 @@ import { predictCategoryFromText } from '../utils/intelligenceEngine'
 
 const AddExpenseModal = ({ onClose }) => {
   const [amount, setAmount] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('Other')
+  const [selectedCategory, setSelectedCategory] = useState('Custom')
   const [note, setNote] = useState('')
   const [detectedCategory, setDetectedCategory] = useState(null)
   const { addExpense, expenses, user } = useStore()
@@ -79,7 +79,7 @@ const AddExpenseModal = ({ onClose }) => {
     setNote(val)
     if (!val.trim()) {
       setDetectedCategory(null)
-      setSelectedCategory('Other')
+      setSelectedCategory('Custom')
       return
     }
 
@@ -90,12 +90,12 @@ const AddExpenseModal = ({ onClose }) => {
       expenses,
     })
 
-    if (prediction?.category && (prediction.confidence || 0) >= 0.45) {
+    if (prediction?.matched && prediction?.category) {
       setSelectedCategory(prediction.category)
       setDetectedCategory(`${prediction.category} (${Math.round((prediction.confidence || 0) * 100)}%)`)
     } else {
       setDetectedCategory(null)
-      setSelectedCategory('Other')
+      setSelectedCategory(prediction?.category || val.trim() || 'Custom')
     }
   }
 
@@ -163,7 +163,7 @@ const AddExpenseModal = ({ onClose }) => {
                 type="text" 
                 value={note}
                 onChange={(e) => handleNoteChange(e.target.value)}
-                placeholder="What was this for? (e.g. 250 swiggy)"
+                placeholder="Enter app or merchant name (e.g. Myntra, Swiggy, Uber)"
                 className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#6366F1]/20 outline-none font-medium transition-all"
               />
             </div>
