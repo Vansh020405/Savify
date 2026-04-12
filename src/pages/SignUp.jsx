@@ -6,17 +6,23 @@ import { Wallet, GraduationCap } from 'lucide-react'
 
 const SignUp = () => {
   const [name, setName] = useState('')
+  const [password, setPassword] = useState('')
   const [income, setIncome] = useState('')
   const [isStudent, setIsStudent] = useState(false)
   const [currentBalance, setCurrentBalance] = useState('')
   const [includesSalary, setIncludesSalary] = useState(false)
+  const [showSurvey, setShowSurvey] = useState(false)
+  const [pendingSignupData, setPendingSignupData] = useState(null)
+  const [musicApp, setMusicApp] = useState('Spotify')
+  const [paysOttSeparately, setPaysOttSeparately] = useState('yes')
+  const [spendPreference, setSpendPreference] = useState('food')
   const completeOnboarding = useStore(state => state.completeOnboarding)
   const setUser = useStore(state => state.setUser)
   const addExpense = useStore(state => state.addExpense)
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!name || (!income && !isStudent)) return
+    if (!name || !password || (!income && !isStudent)) return
     
     const numIncome = Number(income) || 0
     const numBalance = Number(currentBalance) || 0
@@ -26,17 +32,37 @@ const SignUp = () => {
       finalInitialBalance += numIncome
     }
 
-    setUser({
+    setPendingSignupData({
       name,
+      password,
       income: numIncome,
       isStudent,
+      finalInitialBalance,
+    })
+    setShowSurvey(true)
+  }
+
+  const handleSurveySubmit = (e) => {
+    e.preventDefault()
+    if (!pendingSignupData) return
+
+    setUser({
+      name: pendingSignupData.name,
+      password: pendingSignupData.password,
+      income: pendingSignupData.income,
+      isStudent: pendingSignupData.isStudent,
+      preferences: {
+        musicApp,
+        paysOttSeparately: paysOttSeparately === 'yes',
+        spendPreference,
+      },
     }, true)
 
     // Log the initial calculated balance
-    if (finalInitialBalance > 0) {
+    if (pendingSignupData.finalInitialBalance > 0) {
       addExpense({
         title: 'Initial Balance + Salary',
-        amount: finalInitialBalance,
+        amount: pendingSignupData.finalInitialBalance,
         category: 'Income',
         type: 'income',
         date: new Date().toISOString()
@@ -69,6 +95,18 @@ const SignUp = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="E.g. Alex"
+              className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 font-bold text-sm outline-none focus:border-indigo-500 transition-colors"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Password</label>
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 6 characters"
               className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 font-bold text-sm outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
@@ -135,7 +173,7 @@ const SignUp = () => {
             type="submit"
             className="w-full bg-[#6366F1] text-white font-black uppercase tracking-widest text-xs py-4 rounded-2xl active:scale-95 transition-transform mt-4 shadow-lg shadow-indigo-100"
           >
-            Create Account
+            Continue
           </button>
         </form>
 
@@ -143,6 +181,83 @@ const SignUp = () => {
           Already have an account? <Link to="/signin" className="text-indigo-500">Sign In</Link>
         </p>
       </motion.div>
+
+      {showSurvey && (
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm p-6 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="w-full max-w-sm bg-white p-7 rounded-[2rem] shadow-xl border border-slate-100"
+          >
+            <h2 className="text-xl font-black mb-1 tracking-tight text-[#1A1932]">Quick Personalization</h2>
+            <p className="text-slate-500 text-xs font-medium mb-6">Answer 3 questions so Savify can suggest better app-switch nudges.</p>
+
+            <form onSubmit={handleSurveySubmit} className="space-y-4">
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Which music app do you use?</label>
+                <select
+                  value={musicApp}
+                  onChange={(e) => setMusicApp(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-3.5 font-bold text-sm outline-none focus:border-indigo-500 transition-colors"
+                >
+                  <option>Spotify</option>
+                  <option>Apple Music</option>
+                  <option>YouTube Music</option>
+                  <option>Gaana</option>
+                  <option>JioSaavn</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Do you pay for all OTTs separately?</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaysOttSeparately('yes')}
+                    className={`rounded-xl py-3 text-xs font-black uppercase tracking-wider border transition-colors ${paysOttSeparately === 'yes' ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-500'}`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaysOttSeparately('no')}
+                    className={`rounded-xl py-3 text-xs font-black uppercase tracking-wider border transition-colors ${paysOttSeparately === 'no' ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-500'}`}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Do you like spending more on food or shopping?</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSpendPreference('food')}
+                    className={`rounded-xl py-3 text-xs font-black uppercase tracking-wider border transition-colors ${spendPreference === 'food' ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-500'}`}
+                  >
+                    Food
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSpendPreference('shopping')}
+                    className={`rounded-xl py-3 text-xs font-black uppercase tracking-wider border transition-colors ${spendPreference === 'shopping' ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-100 text-slate-500'}`}
+                  >
+                    Shopping
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-[#6366F1] text-white font-black uppercase tracking-widest text-xs py-3.5 rounded-2xl active:scale-95 transition-transform mt-2 shadow-lg shadow-indigo-100"
+              >
+                Create Account
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-const API_KEY = 'd7dml99r01qggoeot8q0d7dml99r01qggoeot8qg';
+const API_KEY = import.meta.env.VITE_FINNHUB_API_KEY || '5Z0GPPA39W00E614';
 const BASE_URL = 'https://finnhub.io/api/v1';
 
 export const stocks = [
@@ -9,18 +9,50 @@ export const stocks = [
   { name: "Infosys", symbol: "INFY.NS", avgReturn: 0.11, tag: "IT Giant" },
 ];
 
+const fallbackQuotes = {
+  'RELIANCE.NS': { current: 2928.45, change: 18.35, percent: 0.63 },
+  'TCS.NS': { current: 4179.2, change: -26.7, percent: -0.63 },
+  'NIFTYBEES.NS': { current: 259.8, change: 1.95, percent: 0.76 },
+  'HDFCBANK.NS': { current: 1643.55, change: 9.45, percent: 0.58 },
+  'INFY.NS': { current: 1510.3, change: -7.9, percent: -0.52 },
+}
+
+function toSafeNumber(value, fallback = 0) {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
 export async function fetchStockPrice(symbol) {
+  const fallback = fallbackQuotes[symbol] || { current: 0, change: 0, percent: 0 }
+
+  if (!API_KEY) {
+    return fallback
+  }
+
   try {
-    const response = await fetch(`${BASE_URL}/quote?symbol=${symbol}&token=${API_KEY}`);
-    const data = await response.json();
+    const response = await fetch(`${BASE_URL}/quote?symbol=${symbol}&token=${API_KEY}`)
+    if (!response.ok) {
+      return fallback
+    }
+
+    const data = await response.json()
+
+    const current = toSafeNumber(data?.c, fallback.current)
+    const change = toSafeNumber(data?.d, fallback.change)
+    const percent = toSafeNumber(data?.dp, fallback.percent)
+
+    if (current <= 0) {
+      return fallback
+    }
+
     return {
-      current: data.c,
-      change: data.d,
-      percent: data.dp
-    };
+      current,
+      change,
+      percent,
+    }
   } catch (error) {
-    console.error(`Error fetching ${symbol}:`, error);
-    return null;
+    console.error(`Error fetching ${symbol}:`, error)
+    return fallback
   }
 }
 

@@ -88,8 +88,8 @@ const CompactNudgeCard = ({ nudge, onDismiss, onApply }) => {
         </p>
 
         <div className={`flex items-center gap-2 mb-4 ${isApplied ? 'opacity-50 filter grayscale' : ''}`}>
-           <span className="text-emerald-500 font-black text-xl savings-glow">₹{nudge.potentialSaving || '400'} saved</span>
-           <Sparkles size={14} className="text-emerald-400 animate-pulse" />
+           <span className="text-emerald-500 font-black text-xl savings-glow">Save ₹{nudge.potentialSaving || '400'}</span>
+           
         </div>
         
         {/* Buttons State Machine */}
@@ -265,7 +265,7 @@ const Nudges = () => {
                       </div>
                       <div>
                         <p className="font-black text-[#1A1932] text-xs mb-0.5">{nudge.title.split('→')[0]}</p>
-                        <p className="text-emerald-500 font-extrabold text-[10px]">₹{nudge.potentialSaving || 99} SAVED / MO</p>
+                        <p className="text-emerald-500 font-extrabold text-[10px]">SAVE ₹{nudge.potentialSaving || 99} AMOUNT / MO</p>
                       </div>
                     </div>
                     <motion.div

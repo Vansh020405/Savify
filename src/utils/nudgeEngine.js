@@ -200,7 +200,7 @@ export function generateNudges(expenses, user, appliedNudges = []) {
   })
 
   // ─── RULE 7: Subscription Switch Suggestions ──────────────────────────────
-  
+
   // Spotify -> Apple Music
   const spotifyExp = allExpenses.find(e => e.title.toLowerCase().includes('spotify'))
   if (spotifyExp && !appliedIds.has('Music Optimization: Spotify')) {

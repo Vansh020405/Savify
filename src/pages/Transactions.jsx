@@ -1,17 +1,17 @@
+import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Search, SlidersHorizontal, ChevronRight, Bell, TrendingUp, TrendingDown } from 'lucide-react'
+import { Search, ChevronRight, Bell, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { HandDrawnIcon } from '../components/HandDrawnIcon'
+import { buildIntelligenceSnapshot } from '../utils/intelligenceEngine'
 
 const Transactions = () => {
   const { user, expenses } = useStore()
+  const [searchQuery, setSearchQuery] = useState('')
 
   // ── Computed metrics ──────────────────────────────────────────────────
   const allExpenses = expenses.filter(e => e.type === 'expense')
   const monthlyOutflow = allExpenses.reduce((s, e) => s + e.amount, 0)
-  const totalIncome   = expenses.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0)
-  const budgetStatus  = totalIncome > 0 && monthlyOutflow < totalIncome * 0.8 ? 'On Track' : 'Over Budget'
-  const isOnTrack     = budgetStatus === 'On Track'
 
   const now = Date.now()
   const thisWeekSpend = allExpenses
@@ -29,8 +29,23 @@ const Transactions = () => {
 
   // Max for bar scaling
   const barMax = Math.max(thisWeekSpend, lastWeekSpend, 1)
+  const intelligence = buildIntelligenceSnapshot(expenses, user)
+  const anomalyMap = intelligence.anomalies
+  const anomalyCount = Object.keys(anomalyMap).length
+  const activeSpendDays = new Set(allExpenses.map((e) => new Date(e.date).toDateString())).size
+  const averageDailySpend = activeSpendDays > 0 ? Math.round(monthlyOutflow / activeSpendDays) : 0
 
-  const groupedExpenses = expenses.reduce((acc, exp) => {
+  const filteredExpenses = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return expenses
+    return expenses.filter((exp) => {
+      const titleMatch = (exp.title || '').toLowerCase().includes(query)
+      const categoryMatch = (exp.category || '').toLowerCase().includes(query)
+      return titleMatch || categoryMatch
+    })
+  }, [expenses, searchQuery])
+
+  const groupedExpenses = filteredExpenses.reduce((acc, exp) => {
     const date = new Date(exp.date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })
     if (!acc[date]) acc[date] = []
     acc[date].push(exp)
@@ -58,14 +73,28 @@ const Transactions = () => {
           <div className="text-2xl font-black text-slate-900">{user.currency}{monthlyOutflow.toLocaleString()}</div>
         </div>
         <div className={`rounded-3xl p-5 border text-white ${
-          isOnTrack
-            ? 'bg-emerald-500 border-emerald-400 shadow-xl shadow-emerald-100'
-            : 'bg-rose-500 border-rose-400 shadow-xl shadow-rose-100'
+          intelligence.predictions.weeklyDeltaPct !== null && intelligence.predictions.weeklyDeltaPct > 0
+            ? 'bg-rose-500 border-rose-400 shadow-xl shadow-rose-100'
+            : 'bg-indigo-500 border-indigo-400 shadow-xl shadow-indigo-100'
         }`}>
-          <span className="text-white/70 text-[10px] font-black uppercase tracking-widest block mb-1">Smart Budget</span>
-          <div className="text-xl font-black">{budgetStatus}</div>
+          <span className="text-white/70 text-[10px] font-black uppercase tracking-widest block mb-1">AI Forecast</span>
+          <div className="text-sm font-black leading-tight">
+            Avg Daily: {user.currency}{averageDailySpend.toLocaleString()}
+          </div>
+          <div className="text-[11px] font-bold text-white/90 mt-1">
+            Predicted Next Week: {user.currency}{intelligence.predictions.predictedNextWeekSpend.toLocaleString()}
+          </div>
         </div>
       </div>
+
+      {anomalyCount > 0 && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+            <AlertTriangle size={16} />
+          </div>
+          <p className="text-xs font-bold text-amber-800">{anomalyCount} unusual transaction{anomalyCount > 1 ? 's' : ''} detected this cycle. Review flagged entries below.</p>
+        </div>
+      )}
 
       {/* Weekly Comparison Strip */}
       <div className="bg-white rounded-[2.5rem] p-8 shadow-soft border border-slate-50 mb-8 relative overflow-hidden">
@@ -104,18 +133,26 @@ const Transactions = () => {
       </div>
 
       {/* Pill Search Bar */}
-      <div className="flex gap-3 mb-8">
-        <div className="flex-1 bg-white rounded-pill border border-slate-100 px-6 flex items-center gap-3 shadow-soft">
+      <div className="mb-8">
+        <div className="bg-white rounded-pill border border-slate-100 px-6 flex items-center gap-3 shadow-soft">
           <Search size={18} className="text-slate-400" />
-          <input type="text" placeholder="Search transactions..." className="w-full py-4 text-sm font-medium outline-none bg-transparent" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search transactions..."
+            className="w-full py-4 text-sm font-medium outline-none bg-transparent"
+          />
         </div>
-        <button className="bg-white p-4 rounded-pill border border-slate-100 text-slate-400 shadow-soft active:scale-95 transition-transform">
-          <SlidersHorizontal size={20} />
-        </button>
       </div>
 
       <div className="space-y-8">
-        {Object.entries(groupedExpenses).map(([date, items]) => (
+        {Object.entries(groupedExpenses).length === 0 ? (
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-50/50 text-center">
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">No results</p>
+            <p className="text-slate-400 text-[11px] mt-2">Try another title or category keyword.</p>
+          </div>
+        ) : Object.entries(groupedExpenses).map(([date, items]) => (
           <div key={date}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xs font-black text-secondary uppercase tracking-widest">{date}</h3>
@@ -139,6 +176,9 @@ const Transactions = () => {
                     <div>
                       <p className="font-bold text-slate-900 text-sm tracking-tight">{exp.title}</p>
                       <p className="text-slate-400 text-[10px] font-medium uppercase tracking-wider">{exp.category} • {new Date(exp.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      {anomalyMap[exp.id]?.isAnomaly && (
+                        <p className="text-[9px] font-black uppercase tracking-widest text-rose-600 mt-1">Unusual spend detected</p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

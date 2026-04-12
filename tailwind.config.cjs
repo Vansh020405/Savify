@@ -24,10 +24,6 @@ module.exports = {
         background: '#F8F9FB',
         surface: '#ffffff',
       },
-      fontFamily: {
-        manrope: ['Manrope', 'sans-serif'],
-        inter: ['Inter', 'sans-serif'],
-      },
       borderRadius: {
         '2xl': '1rem',
         '3xl': '1.5rem',

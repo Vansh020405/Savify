@@ -1,5 +1,5 @@
 import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion'
-import { ChevronLeft, TrendingUp, Info, ArrowUpRight, ArrowDownRight, RefreshCw, LayoutGrid } from 'lucide-react'
+import { ChevronLeft, TrendingUp, Info, ArrowUpRight, ArrowDownRight, RefreshCw, LayoutGrid, CheckCircle2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { stocks, fetchStockPrice, calculateFutureValue } from '../utils/stockApi'
@@ -30,13 +30,17 @@ const AnimatedCurrency = ({ value, className = '' }) => {
 
 const Investments = () => {
   const navigate = useNavigate()
-  const { appliedMonthlySavings, expenses } = useStore()
+  const { appliedMonthlySavings, expenses, user, setUser } = useStore()
   const [stockData, setStockData] = useState([])
   const [loading, setLoading] = useState(true)
+  const [autoInvestMsg, setAutoInvestMsg] = useState('')
+  const [selectedTenure, setSelectedTenure] = useState(5)
+  const [monthlyDepositInput, setMonthlyDepositInput] = useState('0')
 
   const transactions = Array.isArray(expenses) ? expenses : []
-  const savedAmountMonthly = toSafeNumber(appliedMonthlySavings)
-  const monthly = savedAmountMonthly || 0
+  const expenseTransactions = transactions.filter((entry) => entry?.type === 'expense')
+  const hasBehaviorHistory = expenseTransactions.length > 0
+  const nudgesMonthlySaving = toSafeNumber(appliedMonthlySavings)
 
   const totalIncome = transactions
     .filter((entry) => entry?.type === 'income')
@@ -44,23 +48,31 @@ const Investments = () => {
   const totalExpense = transactions
     .filter((entry) => entry?.type === 'expense')
     .reduce((sum, entry) => sum + toSafeNumber(entry?.amount), 0)
-  const totalSavings = Math.max(0, totalIncome - totalExpense)
+  const balance = Math.max(0, totalIncome - totalExpense)
 
-  const oneYear = monthly > 0 ? calculateFutureValue(monthly, 1, 0.12) : 0
-  const threeYears = monthly > 0 ? calculateFutureValue(monthly, 3, 0.12) : 0
-  const fiveYears = monthly > 0 ? calculateFutureValue(monthly, 5, 0.12) : 0
+  const availableSavings = Math.max(0, balance)
+  const baseSuggestion = hasBehaviorHistory && availableSavings > 0
+    ? Math.max(500, Math.round((availableSavings * 0.2) / 100) * 100)
+    : 0
+  const suggestedMonthlyInvestment = hasBehaviorHistory
+    ? (nudgesMonthlySaving > 0 ? Math.max(baseSuggestion, nudgesMonthlySaving) : baseSuggestion)
+    : 0
 
-  const projectionBars = [
-    { label: '1Y', years: 1, value: oneYear },
-    { label: '3Y', years: 3, value: threeYears },
-    { label: '5Y', years: 5, value: fiveYears },
-  ]
-  const maxProjection = Math.max(...projectionBars.map((bar) => toSafeNumber(bar.value)), 1)
+  const oneYear = calculateFutureValue(suggestedMonthlyInvestment, 1, 0.12)
+  const threeYears = calculateFutureValue(suggestedMonthlyInvestment, 3, 0.12)
+  const fiveYears = calculateFutureValue(suggestedMonthlyInvestment, 5, 0.12)
+  const parsedMonthlyDeposit = Math.max(0, toSafeNumber(monthlyDepositInput))
+  const effectiveMonthlyDeposit = hasBehaviorHistory
+    ? (parsedMonthlyDeposit > 0 ? parsedMonthlyDeposit : suggestedMonthlyInvestment)
+    : 0
+  const potentialGrowth = hasBehaviorHistory ? calculateFutureValue(effectiveMonthlyDeposit, selectedTenure, 0.12) : 0
+
+  const tenureOptions = [1, 3, 5]
 
   const loadData = async () => {
     setLoading(true)
     const results = await Promise.all(
-      stocks.slice(0, 3).map(async (s) => {
+      stocks.slice(0, 5).map(async (s) => {
         const price = await fetchStockPrice(s.symbol)
         return {
           ...s,
@@ -76,23 +88,42 @@ const Investments = () => {
     setLoading(false)
   }
 
+  const handleAutoInvest = () => {
+    if (!hasBehaviorHistory || suggestedMonthlyInvestment <= 0) {
+      setAutoInvestMsg('Start adding transactions first. Auto Invest activates after spending behavior is detected.')
+      return
+    }
+    setUser({
+      autoInvest: {
+        enabled: true,
+        amount: suggestedMonthlyInvestment,
+        source: nudgesMonthlySaving > 0 ? 'nudges+balance' : 'balance',
+      },
+    })
+    setAutoInvestMsg(`Auto Invest enabled for ₹${suggestedMonthlyInvestment.toLocaleString('en-IN')}/month`)
+  }
+
   useEffect(() => {
     loadData()
   }, [])
 
   useEffect(() => {
-    console.log('Investments dashboard values', {
-      savedAmountMonthly,
-      monthly,
-      transactionsCount: transactions.length,
-      totalIncome,
-      totalExpense,
-      totalSavings,
-      oneYear,
-      threeYears,
-      fiveYears,
-    })
-  }, [savedAmountMonthly, monthly, transactions.length, totalIncome, totalExpense, totalSavings, oneYear, threeYears, fiveYears])
+    if (!monthlyDepositInput || toSafeNumber(monthlyDepositInput) === 0) {
+      setMonthlyDepositInput(String(suggestedMonthlyInvestment))
+    }
+  }, [suggestedMonthlyInvestment])
+
+  const bestStockByAI = stockData.length > 0
+    ? [...stockData].sort((a, b) => {
+        const scoreA = (toSafeNumber(a.avgReturn) * 100) + (toSafeNumber(a?.price?.percent) * 0.8)
+        const scoreB = (toSafeNumber(b.avgReturn) * 100) + (toSafeNumber(b?.price?.percent) * 0.8)
+        return scoreB - scoreA
+      })[0]
+    : null
+
+  const bestStockReason = bestStockByAI
+    ? `AI Analysis: ${bestStockByAI.name} ranks highest on return quality + recent momentum. Avg return ~${Math.round(toSafeNumber(bestStockByAI.avgReturn) * 100)}% with ${Math.abs(toSafeNumber(bestStockByAI?.price?.percent)).toFixed(2)}% recent move.`
+    : 'AI Analysis: Waiting for market data. Using fallback picks for now.'
 
   return (
     <div className="bg-[#F8F9FB] min-h-screen pb-32">
@@ -116,69 +147,80 @@ const Investments = () => {
       </header>
 
       <main className="pt-24 px-6 max-w-md mx-auto">
-        {/* Overview */}
-        <div className="mb-8 p-6 bg-[#1A1932] rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl">
+        {/* Your Investment Potential */}
+        <div className="mb-6 p-6 bg-[#1A1932] rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl">
           <div className="absolute top-0 right-0 p-8 opacity-10">
             <TrendingUp size={100} />
           </div>
-          <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-2">Investment Dashboard</p>
-          <div className="text-[11px] text-white/70 font-bold leading-relaxed">
-            Invest {formatCurrency(monthly)}/month → {formatCurrency(fiveYears)} in 5 years 📈
+          <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-2">Your Investment Potential</p>
+          <div className="grid grid-cols-1 gap-3 relative z-10">
+            <div className="bg-white/10 border border-white/10 rounded-2xl p-3">
+              <p className="text-[9px] text-white/60 font-black uppercase tracking-widest mb-1">Available Savings</p>
+              <p className="text-2xl font-black tracking-tight"><AnimatedCurrency value={availableSavings} /></p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-white/10 border border-white/10 rounded-2xl p-3">
+                <p className="text-[9px] text-white/60 font-black uppercase tracking-widest mb-1">Suggested Monthly</p>
+                <p className="text-lg font-black"><AnimatedCurrency value={suggestedMonthlyInvestment} /></p>
+              </div>
+              <div className="bg-emerald-500/20 border border-emerald-300/20 rounded-2xl p-3">
+                <p className="text-[9px] text-emerald-200 font-black uppercase tracking-widest mb-1">Future Value (5Y)</p>
+                <p className="text-lg font-black text-emerald-200"><AnimatedCurrency value={fiveYears} /></p>
+              </div>
+            </div>
+            {!hasBehaviorHistory && (
+              <p className="text-[11px] text-white/70 font-bold">New profile detected: values will stay at ₹0 until spending behavior data is available.</p>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 mb-8">
-          <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-2">Monthly Investment</p>
-            <p className="text-3xl font-black text-[#1A1932]"><AnimatedCurrency value={monthly} />/month</p>
-          </div>
-          <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-2">Total Saved So Far</p>
-            <p className="text-3xl font-black text-[#1A1932]"><AnimatedCurrency value={totalSavings} /></p>
-          </div>
-          <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-2">Future Value (5 Years)</p>
-            <p className="text-3xl font-black text-emerald-600"><AnimatedCurrency value={fiveYears} /></p>
-          </div>
-        </div>
-
-        {/* Growth Projection */}
+        {/* Unified Growth Simulator */}
         <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm mb-8">
-          <h2 className="text-xs font-black text-[#1A1932] uppercase tracking-[0.15em] mb-1">Your money can grow like this 📈</h2>
-          <p className="text-[11px] text-slate-400 font-semibold mb-6">Assuming 12% annual return with monthly SIP.</p>
+          <h2 className="text-xs font-black text-[#1A1932] uppercase tracking-[0.15em] mb-2">Growth Simulator</h2>
+          <p className="text-[11px] text-slate-400 font-semibold mb-4">Choose tenure + monthly deposit to see potential growth.</p>
 
-          <div className="space-y-4 mb-5">
-            {projectionBars.map((entry) => {
-              const width = `${Math.max(8, Math.round((toSafeNumber(entry.value) / maxProjection) * 100))}%`
-              const highlight = entry.years === 5
-              return (
-                <div key={entry.years}>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[11px] font-black text-slate-500 uppercase tracking-wider">{entry.years} year</p>
-                    <p className={`font-black ${highlight ? 'text-2xl text-emerald-600' : 'text-sm text-[#1A1932]'}`}>
-                      <AnimatedCurrency value={entry.value} />
-                    </p>
-                  </div>
-                  <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width }}
-                      transition={{ duration: 0.8, ease: 'easeOut' }}
-                      className={highlight ? 'h-full bg-emerald-500 rounded-full' : 'h-full bg-indigo-500 rounded-full'}
-                    />
-                  </div>
-                </div>
-              )
-            })}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {tenureOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setSelectedTenure(option)}
+                className={`py-2.5 rounded-xl text-xs font-black uppercase tracking-widest border transition-colors ${selectedTenure === option ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-slate-50 border-slate-100 text-slate-500'}`}
+              >
+                {option}Y
+              </button>
+            ))}
           </div>
 
-          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-700 text-[11px] font-black uppercase tracking-widest text-center">
-            5Y Highlight: {formatCurrency(fiveYears)} potential value
+          <div className="mb-4">
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2">Money To Deposit Monthly</p>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black">₹</span>
+              <input
+                type="number"
+                min="0"
+                value={monthlyDepositInput}
+                onChange={(e) => setMonthlyDepositInput(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3 pl-8 pr-4 text-sm font-black text-[#1A1932] outline-none focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 mb-4">
+            <p className="text-[10px] text-emerald-700 font-black uppercase tracking-widest mb-1">Potential Growth Amount</p>
+            <p className="text-3xl font-black text-emerald-600 tracking-tight"><AnimatedCurrency value={potentialGrowth} /></p>
+            <p className="text-[11px] text-emerald-700 font-bold mt-1">{selectedTenure} year estimate at 12% annual return</p>
+          </div>
+
+          <div className="rounded-2xl bg-indigo-50 border border-indigo-100 p-4">
+            <p className="text-[10px] text-indigo-600 font-black uppercase tracking-widest mb-1">Best Stock Suggestion (AI)</p>
+            <p className="text-sm font-black text-[#1A1932] mb-1">{bestStockByAI?.name || 'Nifty 50 ETF'}</p>
+            <p className="text-[11px] text-slate-600 font-bold leading-relaxed">{bestStockReason}</p>
           </div>
         </div>
 
         <div className="flex items-center justify-between mb-6 px-2">
-          <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Investment Options</h2>
+          <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Market Trends</h2>
           <LayoutGrid size={16} className="text-slate-300" />
         </div>
 
@@ -227,6 +269,31 @@ const Investments = () => {
           </AnimatePresence>
         </div>
 
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-3 mb-8">
+          <button
+            type="button"
+            onClick={() => navigate('/nudges')}
+            className="bg-[#1A1932] text-white py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest"
+          >
+            Invest Now
+          </button>
+          <button
+            type="button"
+            onClick={handleAutoInvest}
+            className="bg-emerald-500 text-white py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest"
+          >
+            Auto Invest Savings
+          </button>
+        </div>
+
+        {autoInvestMsg && (
+          <div className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-center gap-2.5">
+            <CheckCircle2 size={16} className="text-emerald-600" />
+            <p className="text-xs font-bold text-emerald-700">{autoInvestMsg}</p>
+          </div>
+        )}
+
         <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 bg-indigo-50 rounded-2xl flex items-center justify-center text-[#6366F1]">
@@ -235,8 +302,8 @@ const Investments = () => {
             <div>
               <p className="text-[#1A1932] font-black text-xs uppercase tracking-widest mb-2">Savings Connection</p>
               <p className="text-slate-500 text-[11px] leading-relaxed font-medium">
-                Invest {formatCurrency(monthly)}/month and this could become{' '}
-                <span className="text-emerald-500 font-bold">{formatCurrency(fiveYears)}</span> in 5 years with steady investing.
+                Invest {formatCurrency(effectiveMonthlyDeposit)}/month and this could become{' '}
+                <span className="text-emerald-500 font-bold">{formatCurrency(calculateFutureValue(effectiveMonthlyDeposit, 5, 0.12))}</span> in 5 years with steady investing.
               </p>
             </div>
           </div>
