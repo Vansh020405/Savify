@@ -68,50 +68,39 @@ const Transactions = () => {
       </div>
 
       {/* Weekly Comparison Strip */}
-      <div className="bg-white rounded-[2rem] p-6 shadow-soft border border-slate-50 mb-6">
-        <div className="flex items-center justify-between mb-5">
-          <span className="text-[10px] font-black text-secondary uppercase tracking-widest">Weekly Comparison</span>
+      <div className="bg-white rounded-[2.5rem] p-8 shadow-soft border border-slate-50 mb-8 relative overflow-hidden">
+        <div className="flex justify-between items-start mb-8">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Weekly Comparison</span>
           {weeklyDeltaPct !== null && (
-            <span className={`flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full ${
-              trendUp ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-700'
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+              trendUp ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'
             }`}>
-              {trendUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-              {trendUp ? '+' : ''}{weeklyDeltaPct}% vs last week
-            </span>
+              {trendUp ? <TrendingUp size={12} strokeWidth={3} /> : <TrendingDown size={12} strokeWidth={3} />}
+              <span className="text-[11px] font-black uppercase tracking-widest leading-none">
+                {trendUp ? '+' : ''}{weeklyDeltaPct}%
+              </span>
+            </div>
           )}
         </div>
-        <div className="space-y-4">
-          {/* This week bar */}
-          <div>
-            <div className="flex justify-between mb-1.5">
-              <span className="text-xs font-bold text-slate-600">This week</span>
-              <span className="text-xs font-extrabold text-slate-900">{user.currency}{thisWeekSpend.toLocaleString()}</span>
-            </div>
-            <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${(thisWeekSpend / barMax) * 100}%` }}
-                transition={{ duration: 0.9, ease: 'easeOut' }}
-                className={`h-full rounded-full ${ trendUp ? 'bg-rose-400' : 'bg-indigo-500' }`}
-              />
+
+        <div className="flex items-end justify-between gap-4">
+          <div className="flex-1">
+            <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1.5 opacity-50">Spending This Week</p>
+            <div className="flex items-baseline gap-1.5">
+               <span className="text-3xl font-black text-[#1A1932] tracking-tighter">{user.currency}{thisWeekSpend.toLocaleString()}</span>
+               <div className={`w-2 h-2 rounded-full ${trendUp ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.3)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]'}`} />
             </div>
           </div>
-          {/* Last week bar */}
-          <div>
-            <div className="flex justify-between mb-1.5">
-              <span className="text-xs font-bold text-slate-400">Last week</span>
-              <span className="text-xs font-extrabold text-slate-400">{user.currency}{lastWeekSpend.toLocaleString()}</span>
-            </div>
-            <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${(lastWeekSpend / barMax) * 100}%` }}
-                transition={{ duration: 0.9, ease: 'easeOut', delay: 0.1 }}
-                className="h-full rounded-full bg-slate-200"
-              />
-            </div>
+          
+          <div className="text-right">
+            <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1 opacity-50">Last Week</p>
+            <p className="text-lg font-bold text-slate-300 tracking-tight">{user.currency}{lastWeekSpend.toLocaleString()}</p>
           </div>
         </div>
+        
+        <p className="mt-8 text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+           {trendUp ? 'Spending is high 🍔' : 'Great saving 🥗'} vs last week
+        </p>
       </div>
 
       {/* Pill Search Bar */}

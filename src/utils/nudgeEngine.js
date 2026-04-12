@@ -46,8 +46,9 @@ function weeklyTrend(expenses) {
  * @param {Object} user      - User object (income, currency, savingsGoal)
  * @returns {Array} nudges   - Array of nudge objects sorted by priority
  */
-export function generateNudges(expenses, user) {
+export function generateNudges(expenses, user, appliedNudges = []) {
   const nudges = []
+  const appliedIds = new Set(appliedNudges.map(n => n.title)) // Use title for stability during testing
   const allExpenses = expenses.filter(e => e.type === 'expense')
   const totalSpend = allExpenses.reduce((s, e) => s + e.amount, 0)
   const income = user.income || 50000
@@ -198,7 +199,89 @@ export function generateNudges(expenses, user) {
     trend: null,
   })
 
-  // ─── RULE 6: No recent income logged ────────────────────────────────────────
+  // ─── RULE 7: Subscription Switch Suggestions ──────────────────────────────
+  
+  // Spotify -> Apple Music
+  const spotifyExp = allExpenses.find(e => e.title.toLowerCase().includes('spotify'))
+  if (spotifyExp && !appliedIds.has('Music Optimization: Spotify')) {
+    nudges.push({
+      id: `switch-spotify`,
+      title: `Music Optimization: Spotify`,
+      description: `Switch from Spotify to Apple Music and save ₹40/month.`,
+      type: 'switch',
+      icon: 'refresh',
+      priority: 11,
+      potentialSaving: 40,
+      switchInfo: {
+        from: "Spotify",
+        to: "Apple Music",
+        savings: 40,
+        message: "Switch & save ₹40/month"
+      }
+    })
+  }
+
+  // Netflix -> Amazon Prime
+  const netflixExp = allExpenses.find(e => e.title.toLowerCase().includes('netflix'))
+  if (netflixExp && !appliedIds.has('Entertainment: Netflix')) {
+    nudges.push({
+      id: `switch-netflix`,
+      title: `Entertainment: Netflix`,
+      description: `Switch to Amazon Prime Video and save ₹350/month.`,
+      type: 'switch',
+      icon: 'refresh',
+      priority: 10.5,
+      potentialSaving: 350,
+      switchInfo: {
+        from: "Netflix",
+        to: "Amazon Prime",
+        savings: 350,
+        message: "Save ₹350/mo on movies"
+      }
+    })
+  }
+
+  // Swiggy -> Cook at Home
+  const swiggyExp = allExpenses.find(e => e.title.toLowerCase().includes('swiggy'))
+  if (swiggyExp && !appliedIds.has('Food: Swiggy')) {
+    nudges.push({
+      id: `switch-swiggy`,
+      title: `Food: Swiggy`,
+      description: `Swap 2 Swiggy orders for home cooking and save ₹300/week.`,
+      type: 'switch',
+      icon: 'food',
+      priority: 10.4,
+      potentialSaving: 1200,
+      switchInfo: {
+        from: "Swiggy",
+        to: "Home Cooking",
+        savings: 1200,
+        message: "Healthier & ₹1,200 richer"
+      }
+    })
+  }
+
+  // Uber -> Public Transport
+  const uberExp = allExpenses.find(e => e.title.toLowerCase().includes('uber'))
+  if (uberExp && !appliedIds.has('Transport: Uber')) {
+    nudges.push({
+      id: `switch-uber`,
+      title: `Transport: Uber`,
+      description: `Switch to Metro/Bus for long commutes and save ₹150/day.`,
+      type: 'switch',
+      icon: 'travel',
+      priority: 10.3,
+      potentialSaving: 3000,
+      switchInfo: {
+        from: "Uber",
+        to: "Public Transport",
+        savings: 3000,
+        message: "Beat traffic & save ₹3,000"
+      }
+    })
+  }
+
+  // ─── RULE 8: No recent income logged ────────────────────────────────────────
   const recentIncome = lastNDays(expenses.filter(e => e.type === 'income'), 35)
   if (recentIncome.length === 0 && expenses.length > 2) {
     nudges.push({

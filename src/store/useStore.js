@@ -10,6 +10,7 @@ const initialExpenses = [
   { id: 2, title: 'Uniqlo India', amount: 2490, category: 'Shopping', date: daysAgo(1), type: 'expense' },
   { id: 3, title: 'Uber Central', amount: 520, category: 'Travel', date: daysAgo(2), type: 'expense' },
   { id: 4, title: "Nature's Basket", amount: 1120, category: 'Food', date: daysAgo(3), type: 'expense' },
+  { id: 10, title: 'Spotify Premium', amount: 149, category: 'Subscription', date: daysAgo(4), type: 'expense' },
   // Prior week (7–14 days ago) — used for weekly comparison baseline
   { id: 6, title: 'Swiggy Order', amount: 680, category: 'Food', date: daysAgo(8), type: 'expense' },
   { id: 7, title: 'Rapido', amount: 180, category: 'Travel', date: daysAgo(9), type: 'expense' },
@@ -22,6 +23,7 @@ const initialUser = {
   income: 50000,
   currency: '₹',
   savingsGoal: 15000,
+  isStudent: false, // For smart scholarship/plan detection
   avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Vansh',
 }
 
@@ -35,13 +37,17 @@ export const useStore = create(
         { id: 2, title: 'New Laptop', target: 80000, current: 40000, category: 'Tech', icon: 'tech' },
       ],
       // Dynamic nudges — computed from engine, not static
-      nudges: generateNudges(initialExpenses, initialUser),
+      nudges: generateNudges(initialExpenses, initialUser, []),
 
-      setUser: (userData) => set((state) => {
+      setUser: (userData, wipeLedger = false) => set((state) => {
         const updatedUser = { ...state.user, ...userData }
+        const newExpenses = wipeLedger ? [] : state.expenses
         return {
           user: updatedUser,
-          nudges: generateNudges(state.expenses, updatedUser),
+          expenses: newExpenses,
+          nudges: generateNudges(newExpenses, updatedUser, wipeLedger ? [] : state.appliedNudges),
+          appliedNudges: wipeLedger ? [] : state.appliedNudges,
+          lastSalaryMonth: wipeLedger ? null : state.lastSalaryMonth
         }
       }),
 
@@ -50,20 +56,66 @@ export const useStore = create(
         return {
           expenses: newExpenses,
           // Auto-recalculate nudges on every new expense
-          nudges: generateNudges(newExpenses, state.user),
+          nudges: generateNudges(newExpenses, state.user, state.appliedNudges),
         }
       }),
 
-      // Manual trigger — useful for refreshes or testing
+      lastSalaryMonth: null,
+      
+      checkAndAddMonthlySalary: () => set((state) => {
+        if (!state.isOnboarded) return state
+        
+        const currentMonth = new Date().toISOString().slice(0, 7) // 'YYYY-MM'
+        if (state.lastSalaryMonth && state.lastSalaryMonth !== currentMonth && state.user.income > 0) {
+           const newExpenses = [{
+             id: Date.now(),
+             title: 'Monthly Salary Auto-Credit',
+             amount: state.user.income,
+             category: 'Income',
+             type: 'income',
+             date: new Date().toISOString()
+           }, ...state.expenses]
+           
+           return {
+             expenses: newExpenses,
+             lastSalaryMonth: currentMonth,
+             nudges: generateNudges(newExpenses, state.user, state.appliedNudges)
+           }
+        } else if (!state.lastSalaryMonth) {
+           return { lastSalaryMonth: currentMonth }
+        }
+        return state
+      }),
+
+      // Manual reset/trigger — useful for refreshes or testing
       refreshNudges: () => set((state) => ({
-        nudges: generateNudges(state.expenses, state.user),
+        nudges: generateNudges(state.expenses, state.user, []),
+        appliedNudges: [],
+        appliedMonthlySavings: 0
       })),
 
       completeOnboarding: () => set({ isOnboarded: true }),
+      logout: () => set({ isOnboarded: false }),
 
       addGoal: (goal) => set((state) => ({
         goals: [{ ...goal, id: Date.now() }, ...state.goals],
       })),
+
+      appliedMonthlySavings: 0,
+      appliedNudges: [],
+      
+      applyNudge: (nudgeId) => set((state) => {
+        const nudge = state.nudges.find(n => n.id === nudgeId)
+        if (!nudge) return {} // Guard
+        const savingsValue = nudge.potentialSaving || 0
+        const newAppliedNudges = [nudge, ...state.appliedNudges]
+        return {
+          appliedNudges: newAppliedNudges,
+          appliedMonthlySavings: state.appliedMonthlySavings + savingsValue,
+          nudges: generateNudges(state.expenses, state.user, newAppliedNudges),
+          lastAppliedNudge: nudge // For showing success messages
+        }
+      }),
 
       dismissNudge: (nudgeId) => set((state) => ({
         nudges: state.nudges.filter(n => n.id !== nudgeId),

@@ -1,217 +1,258 @@
-import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, TrendingUp, Info, TrendingDown, ChevronRight } from 'lucide-react'
+import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { Bell, Wallet, Flag, Lightbulb, Coffee, ShoppingBag, Plus, ChevronRight, ArrowRight, Menu, Bot } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { Link } from 'react-router-dom'
 import { HandDrawnIcon } from '../components/HandDrawnIcon'
-import { totalPotentialSavings } from '../utils/nudgeEngine'
+import SwitchNudgeCard from '../components/SwitchNudgeCard'
+import AddIncomeModal from '../components/AddIncomeModal'
+import { useAIDailyInsight } from '../hooks/useAI'
 
-// Map nudge type → visual theme
-const NUDGE_THEME = {
-  warning: {
-    bg: 'bg-rose-50',
-    border: 'border-rose-100',
-    icon: 'bg-rose-100 text-rose-500',
-    label: 'text-rose-600',
-    badge: 'text-rose-500 bg-rose-100',
-    dot: 'bg-rose-400',
-  },
-  alert: {
-    bg: 'bg-amber-50',
-    border: 'border-amber-100',
-    icon: 'bg-amber-100 text-amber-500',
-    label: 'text-amber-700',
-    badge: 'text-amber-600 bg-amber-100',
-    dot: 'bg-amber-400',
-  },
-  good: {
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-100',
-    icon: 'bg-emerald-100 text-emerald-600',
-    label: 'text-emerald-700',
-    badge: 'text-emerald-600 bg-emerald-100',
-    dot: 'bg-emerald-400',
-  },
+const AnimatedNumber = ({ value }) => {
+  const spring = useSpring(0, { mass: 0.8, stiffness: 75, damping: 15 })
+  const display = useTransform(spring, (current) => 
+    Math.floor(current).toLocaleString(undefined, { minimumFractionDigits: 0 })
+  )
+
+  useEffect(() => {
+    spring.set(parseFloat(value.replace(/,/g, '')))
+  }, [value, spring])
+
+  return <motion.span>{display}</motion.span>
 }
 
 const Dashboard = () => {
-  const { user, expenses, nudges } = useStore()
+  const { user, expenses, nudges, applyNudge } = useStore()
+  const [isAddIncomeOpen, setIsAddIncomeOpen] = useState(false)
+  const { insight: aiDailyInsight, loading: aiLoading } = useAIDailyInsight(expenses, user)
   
-  const totalBalance = expenses
-    .filter(e => e.type === 'income')
-    .reduce((acc, curr) => acc + curr.amount, 0) - 
-    expenses
-    .filter(e => e.type === 'expense')
-    .reduce((acc, curr) => acc + curr.amount, 0)
-    
-  const monthlySpend = expenses
-    .filter(e => e.type === 'expense')
-    .reduce((acc, curr) => acc + curr.amount, 0)
-
-  const recentExpenses = expenses.filter(e => e.type === 'expense').slice(0, 3)
-
-  // Savings goal progress — avg across all goals
-  const goals = useStore(state => state.goals)
-  const avgGoalProgress = goals.length > 0
-    ? Math.round(goals.reduce((s, g) => s + (g.current / g.target) * 100, 0) / goals.length)
-    : 0
-
-  // Weekly trend: this week vs prior week (for the red chip on monthly spend)
-  const thisWeekSpend = expenses
-    .filter(e => e.type === 'expense' && new Date(e.date) >= new Date(Date.now() - 7 * 86400000))
-    .reduce((s, e) => s + e.amount, 0)
-  const lastWeekSpend = expenses
-    .filter(e => {
-      const d = new Date(e.date)
-      const now = Date.now()
-      return e.type === 'expense' && d >= new Date(now - 14 * 86400000) && d < new Date(now - 7 * 86400000)
-    })
-    .reduce((s, e) => s + e.amount, 0)
-  const weeklyDeltaPct = lastWeekSpend > 0
-    ? Math.round(((thisWeekSpend - lastWeekSpend) / lastWeekSpend) * 100)
-    : null
-
-  const weeklyTrendLabel = weeklyDeltaPct !== null
-    ? weeklyDeltaPct >= 0 ? `↑ ${weeklyDeltaPct}% vs last week` : `↓ ${Math.abs(weeklyDeltaPct)}% vs last week`
-    : null
-  const weeklyTrendColor = weeklyDeltaPct !== null && weeklyDeltaPct > 0 ? 'text-rose-500' : 'text-emerald-500'
+  // Dynamic Balance Computation
+  const currentMonth = new Date().getMonth()
+  const totalIncome = expenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0)
+  
+  // Calculate total spent *this month*
+  const totalSpentMonth = expenses.filter(e => {
+    if (e.type !== 'expense') return false
+    const d = new Date(e.date)
+    return d.getMonth() === currentMonth
+  }).reduce((sum, e) => sum + e.amount, 0)
+  
+  // Available Balance is total income minus ALL expenses 
+  const totalSpentAll = expenses.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amount, 0)
+  const displayWealth = Math.max(0, totalIncome - totalSpentAll).toString()
+  
+  const displaySpend = totalSpentMonth.toString()
+  const monthlyIncome = user.income || totalIncome // fallback
+  const percentUsed = monthlyIncome > 0 ? Math.round((totalSpentMonth / monthlyIncome) * 100) : 0
+  
+  const recentExpenses = [
+    { id: '1', title: 'Blue Tokai Coffee', time: '10:45 AM', amount: '340', icon: Coffee },
+    { id: '2', title: 'Uniqlo India', time: 'Work hour', amount: '2490', icon: ShoppingBag }
+  ]
 
   return (
-    <div className="p-6 pb-4">
+    <div className="bg-[#F8F9FB] min-h-screen p-5 pb-32 font-inter selection:bg-indigo-100">
+      <AddIncomeModal isOpen={isAddIncomeOpen} onClose={() => setIsAddIncomeOpen(false)} />
+
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-6 pt-2">
         <div className="flex items-center gap-3">
-          <img src={user.avatar} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-white shadow-soft" />
-          <div>
-            <span className="text-secondary text-xs font-bold uppercase tracking-tight flex items-center">
-              Hey {user.name} <HandDrawnIcon name="wave" size={14} className="ml-1 opacity-60" />
-            </span>
-            <div className="bg-tertiary/10 text-tertiary text-[10px] font-black px-2 py-0.5 rounded-full w-fit mt-1 uppercase tracking-widest">GOLD MEMBER</div>
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            className="w-10 h-10 bg-white shadow-sm border border-slate-50 rounded-2xl flex items-center justify-center overflow-hidden"
+          >
+            <img src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} alt="Profile" className="w-full h-full object-cover" />
+          </motion.div>
+          
+          <div className="flex flex-col">
+            <p className="text-[#3B3A5A] font-black text-sm tracking-tight">
+              Hey {user.name} 
+            </p>
+            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Premium Plan</p>
           </div>
         </div>
-        <button className="relative p-2.5 bg-white rounded-full border border-slate-100 shadow-soft">
-          <Bell size={18} className="text-secondary" />
-          {nudges.filter(n => n.type === 'warning').length > 0 ? (
-            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center">
-            </span>
-          ) : nudges.length > 0 ? (
-            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-amber-400 rounded-full border-2 border-white" />
-          ) : null}
+        <button className="text-[#76758B] p-1">
+          <div className="relative">
+            <Bell size={18} strokeWidth={2.5} />
+            <motion.span 
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="absolute top-0 right-0 w-2 h-2 bg-[#FF5A5F] border-2 border-[#F8F9FB] rounded-full"
+            />
+          </div>
         </button>
       </div>
 
-      {/* Main Card */}
+      {/* Wealth Card */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-primary-gradient rounded-[2.5rem] p-8 text-white mb-8 shadow-2xl shadow-indigo-100 relative overflow-hidden"
+        className="bg-[#6366F1] rounded-[2.5rem] p-8 text-white mb-6 shadow-2xl shadow-indigo-200/50 flex flex-col items-center relative overflow-hidden"
       >
-        <div className="absolute top-0 right-0 p-4 opacity-10">
-          <TrendingUp size={140} />
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
+        <span className="text-white/60 text-[9px] font-black tracking-[0.2em] uppercase mb-2">AVAILABLE BALANCE</span>
+        <div className="text-[2.8rem] font-bold leading-none mb-8 tracking-tighter flex items-center">
+          <span className="text-2xl mr-1.5 opacity-80">₹</span>
+          <AnimatedNumber value={displayWealth} />
         </div>
-        <span className="text-white/60 text-[10px] font-black tracking-widest uppercase">Current Wealth</span>
-        <div className="text-4xl font-extrabold mt-2 mb-8 tracking-tight font-headline">
-          {user.currency}{totalBalance.toLocaleString()}
-        </div>
-        <div className="flex gap-4">
-          <button className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-md py-3 rounded-pill font-bold text-xs transition-colors border border-white/10 uppercase tracking-widest">
-            Add Funds
-          </button>
-          <button className="flex-1 bg-white text-primary py-3 rounded-pill font-bold text-xs shadow-lg active:scale-95 transition-transform uppercase tracking-widest">
-            Withdraw
-          </button>
+        <div className="flex gap-4 w-full relative z-10">
+          <motion.button 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsAddIncomeOpen(true)}
+            className="w-full flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-colors shadow-inner"
+          >
+            <Plus strokeWidth={3} size={16} /> Add Money
+          </motion.button>
         </div>
       </motion.div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <div className="bg-white rounded-3xl p-6 shadow-soft border border-neutral">
-          <span className="text-secondary text-[10px] font-black uppercase tracking-widest">Monthly Spend</span>
-          <div className="text-xl font-extrabold mt-1 text-slate-900">{user.currency}{monthlySpend.toLocaleString()}</div>
-          {weeklyTrendLabel && (
-            <div className={`mt-4 flex items-center gap-1 ${weeklyTrendColor} text-[9px] font-black`}>
-              {weeklyDeltaPct > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-              <span className="uppercase tracking-tighter">{weeklyTrendLabel}</span>
-            </div>
-          )}
+      {/* Monthly Spend Card (Redesigned) */}
+      <motion.div 
+        whileHover={{ scale: 1.02 }}
+        className="bg-white rounded-[2rem] p-6 mb-4 shadow-sm border border-slate-50 flex flex-col gap-4 group"
+      >
+        <div className="flex justify-between items-start">
+           <div>
+             <p className="text-[#A1A1AA] text-[10px] font-black uppercase tracking-widest mb-1">Spent this month</p>
+             <p className="text-[#1A1932] text-2xl font-bold tracking-tight">
+               ₹<AnimatedNumber value={displaySpend} /> <span className="text-sm text-slate-300 font-medium tracking-normal">/ ₹{monthlyIncome.toLocaleString()}</span>
+             </p>
+           </div>
+           <div className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500">
+             <Wallet size={18} strokeWidth={2.5} />
+           </div>
         </div>
-        <div className="bg-white rounded-3xl p-6 shadow-soft border border-neutral">
-          <span className="text-secondary text-[10px] font-black uppercase tracking-widest">Avg Goal Progress</span>
-          <div className="text-xl font-extrabold mt-1 text-slate-900">{avgGoalProgress}% There</div>
-          <div className="mt-4 h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${avgGoalProgress}%` }}
-              transition={{ duration: 1, ease: 'easeOut' }}
-              className="h-full bg-emerald-400 rounded-full shadow-sm"
-            />
+        
+        {/* Progress Bar */}
+        <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden relative">
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min(percentUsed, 100)}%` }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className={`h-full rounded-full relative ${percentUsed > 80 ? 'bg-rose-500' : 'bg-[#6366F1]'}`}
+          />
+        </div>
+        
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+           <Lightbulb size={14} className={percentUsed > 80 ? "text-rose-500" : "text-[#6366F1]"} />
+           {percentUsed > 80 ? "Your spending is slightly high." : `You've used ${percentUsed}% of your income.`}
+        </div>
+      </motion.div>
+
+      
+
+      {/* Nudges Carousel/List */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-4 px-2">
+          <h3 className="text-sm font-black text-[#1A1932] uppercase tracking-[0.15em]">Suggestions</h3>
+          <Link to="/nudges" className="text-[#6366F1] text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+             Manage <ChevronRight size={14} />
+          </Link>
+        </div>
+
+        <div className="space-y-4">
+          <AnimatePresence mode="popLayout">
+            {nudges.length === 0 ? (
+              <div className="bg-white rounded-[2rem] p-6 text-center border border-slate-50 shadow-sm">
+                 <p className="text-emerald-500 font-black text-xs uppercase tracking-widest">Growth Path Active</p>
+              </div>
+            ) : (
+              nudges.slice(0, 4).map((nudge) => (
+                <motion.div 
+                  key={nudge.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-50 relative group hover:shadow-md transition-all"
+                >
+                  {nudge.type === 'switch' ? (
+                    <SwitchNudgeCard 
+                      nudge={nudge} 
+                      onApply={() => applyNudge(nudge.id)}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-[#6366F1]">
+                        <HandDrawnIcon name={nudge.icon || 'star'} size={20} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[#1A1932] font-bold text-xs leading-tight mb-1">{nudge.title.split('→')[0]}</p>
+                        <p className="text-emerald-500 font-black text-sm">₹{nudge.potentialSaving} savings</p>
+                      </div>
+                      <motion.button 
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => applyNudge(nudge.id)}
+                        className="bg-[#6366F1] text-white px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-indigo-100"
+                      >
+                        Apply
+                      </motion.button>
+                    </div>
+                  )}
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* AI Smart Insight Card */}
+      <motion.div 
+        whileHover={{ scale: 1.02 }}
+        className="bg-[#FFFCE4]/60 rounded-[2.5rem] p-6 mb-6 border border-[#FFFBDB] relative overflow-hidden"
+      >
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-10 h-10 bg-[#FFFBDB] rounded-2xl flex items-center justify-center text-[#997C00]">
+            <Lightbulb size={20} strokeWidth={2.5} />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <p className="text-[#997C00] text-[9px] font-black uppercase tracking-[0.2em]">Daily Insight</p>
+              <div className="flex items-center gap-1 px-1.5 py-0.5 bg-violet-100 rounded-full">
+                <Bot size={8} className="text-violet-600" />
+                <span className="text-[7px] font-black text-violet-600 uppercase tracking-widest">AI</span>
+              </div>
+            </div>
+            <p className={`text-[#1A1932] font-bold text-sm leading-relaxed transition-opacity ${aiLoading ? 'opacity-40' : 'opacity-100'}`}>
+              {aiDailyInsight || 'Analyzing your spending patterns...'}
+            </p>
           </div>
         </div>
+        <Link to="/nudges">
+          <motion.button 
+            whileTap={{ scale: 0.95 }}
+            className="w-full bg-white/80 py-3 rounded-2xl text-[#6366F1] font-black text-[10px] uppercase tracking-widest shadow-sm border border-slate-100/50 flex items-center justify-center gap-2"
+          >
+            View all {nudges.length} suggestions <ChevronRight size={14} />
+          </motion.button>
+        </Link>
+      </motion.div>
+
+      {/* Spending Story Header */}
+      <div className="mb-4 flex justify-between items-center px-2">
+        <h3 className="text-sm font-black text-[#1A1932] uppercase tracking-[0.15em]">Activity</h3>
+        <Link to="/transactions" className="text-[#6366F1] text-[10px] font-black uppercase tracking-widest flex items-center gap-1 group">
+          View All <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+        </Link>
       </div>
 
-      {/* Dynamic Top Nudge Card */}
-      <AnimatePresence mode="wait">
-        {nudges.length > 0 && (() => {
-          const top = nudges[0]
-          const theme = NUDGE_THEME[top.type] || NUDGE_THEME.alert
-          const trendLabel = top.trend
-            ? top.trend.direction === 'up'
-              ? `↑ Up ${top.trend.pct}% this week`
-              : `↓ Down ${top.trend.pct}% this week`
-            : null
-          return (
-            <Link to="/nudges" className="block mb-8" key={top.id}>
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.3 }}
-                className="bg-white rounded-[2rem] p-5 border border-slate-100 flex gap-4 items-center shadow-sm"
-              >
-                <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-2xl bg-slate-50">
-                  <HandDrawnIcon name={top.icon || 'star'} size={24} className="text-primary opacity-80" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-primary text-[9px] font-black uppercase tracking-widest opacity-60">AI Smart Insight</span>
-                    {trendLabel && (
-                      <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-primary">{trendLabel}</span>
-                    )}
-                  </div>
-                  <p className="text-slate-900 font-bold text-sm leading-tight tracking-tight">{top.title}</p>
-                </div>
-                <ChevronRight size={18} className="text-slate-300 ml-2" />
-              </motion.div>
-            </Link>
-          )
-        })()}
-      </AnimatePresence>
-
-      {/* Transaction Feed Header */}
-      <div className="mb-4 flex justify-between items-end px-1">
-        <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Your spending story</h3>
-        <Link to="/transactions" className="text-primary text-[10px] font-black uppercase tracking-widest">View All</Link>
-      </div>
-
-      <div className="space-y-4">
+      {/* Transactions List */}
+      <div className="space-y-3">
         {recentExpenses.map((expense) => (
           <motion.div 
-            key={expense.id}
-            whileTap={{ scale: 0.98 }}
-            className="bg-white rounded-2xl p-4 flex items-center justify-between shadow-soft border border-neutral"
+            key={expense.id} 
+            whileHover={{ x: 4 }}
+            className="bg-white rounded-2xl p-4 flex items-center justify-between shadow-sm border border-slate-50/50"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-neutral rounded-2xl flex items-center justify-center shadow-sm text-slate-600">
-                <HandDrawnIcon 
-                  name={expense.category === 'Food' ? 'food' : expense.category === 'Shopping' ? 'shopping' : 'travel'} 
-                  size={24} 
-                />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-500">
+                <expense.icon size={18} strokeWidth={2} />
               </div>
               <div>
-                <p className="font-bold text-slate-900 text-sm tracking-tight">{expense.title}</p>
-                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{expense.category} • TODAY</p>
+                <p className="font-bold text-[#1A1932] text-xs">{expense.title}</p>
+                <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">{expense.time}</p>
               </div>
             </div>
-            <p className="font-extrabold text-slate-900">-{user.currency}{expense.amount}</p>
+            <p className="font-extrabold text-[#1A1932] text-sm">-₹{expense.amount}</p>
           </motion.div>
         ))}
       </div>

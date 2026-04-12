@@ -1,4 +1,4 @@
-import { Home, History, Plus, Target, User } from 'lucide-react'
+import { Home, History, Plus, TrendingUp, User } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -13,16 +13,26 @@ const BottomNav = ({ onAddClick }) => {
   const navItems = [
     { icon: Home, label: 'HOME', path: '/' },
     { icon: History, label: 'HISTORY', path: '/transactions' },
-    { icon: null, label: '', path: '#' }, // Spacer for FAB
-    { icon: Target, label: 'GOALS', path: '/goals' },
+    { icon: Plus, label: '', path: null, isAction: true },
+    { icon: TrendingUp, label: 'INVEST', path: '/investments' },
     { icon: User, label: 'PROFILE', path: '/profile' },
   ]
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-20 nav-blur px-8 pb-2 flex items-center justify-between z-40">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-[400px] h-[72px] bg-white border border-slate-100 px-2 flex items-center justify-around z-40 rounded-[2.5rem] shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
       {navItems.map((item, index) => {
-        if (!item.icon) return <div key={index} className="w-12 h-12" />
-        
+        if (item.isAction) {
+          return (
+            <button 
+              key={index}
+              onClick={onAddClick}
+              className="w-12 h-12 bg-[#6366F1] rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-200 active:scale-90 transition-transform"
+            >
+              <Plus size={24} strokeWidth={2.5} />
+            </button>
+          )
+        }
+
         const isActive = location.pathname === item.path
         const Icon = item.icon
         
@@ -31,27 +41,25 @@ const BottomNav = ({ onAddClick }) => {
             key={index} 
             to={item.path}
             className={cn(
-              "flex flex-col items-center gap-1 transition-all",
-              isActive ? "text-primary scale-110" : "text-slate-400"
+              "flex flex-col items-center gap-1 transition-all min-w-[56px]",
+              isActive ? "text-[#6366F1]" : "text-[#76758B]"
             )}
           >
             <div className={cn(
                "p-2 rounded-full transition-colors",
                isActive ? "bg-indigo-50" : "bg-transparent"
             )}>
-              <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+              <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
             </div>
+            <span className={cn(
+              "text-[7px] font-black tracking-[0.05em] uppercase",
+               isActive ? "text-[#6366F1]" : "text-[#A1A1AA]"
+            )}>
+              {item.label}
+            </span>
           </Link>
         )
       })}
-      
-      {/* FAB */}
-      <button 
-        onClick={onAddClick}
-        className="absolute left-1/2 -top-6 -translate-x-1/2 w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white shadow-xl shadow-indigo-200 active:scale-90 transition-transform z-50 border-4 border-neutral"
-      >
-        <Plus size={32} />
-      </button>
     </div>
   )
 }

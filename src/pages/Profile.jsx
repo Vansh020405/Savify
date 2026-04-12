@@ -18,7 +18,7 @@ const ProfileItem = ({ icon: Icon, label, value, color }) => (
 )
 
 const Profile = () => {
-  const { user } = useStore()
+  const { user, logout } = useStore()
 
   return (
     <div className="p-6">
@@ -71,7 +71,10 @@ const Profile = () => {
         />
       </div>
 
-      <button className="w-full mt-10 p-5 rounded-[2rem] bg-rose-50 text-rose-500 font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-transform">
+      <button 
+        onClick={logout}
+        className="w-full mt-10 p-5 rounded-[2rem] bg-rose-50 text-rose-500 font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-transform"
+      >
         <LogOut size={18} />
         Logout Session
       </button>
