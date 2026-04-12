@@ -217,12 +217,6 @@ const Dashboard = () => {
            </div>
         </div>
 
-        {/* Saved via nudges connection */}
-        {appliedMonthlySavings > 0 && (
-           <div className="mt-4 flex items-center justify-center gap-2 bg-emerald-500/20 text-emerald-100 py-2.5 px-4 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-md">
-             <Bot size={14} /> Saved via Nudges: ₹{appliedMonthlySavings.toLocaleString()}
-           </div>
-        )}
       </motion.div>
 
       {/* Suggestions Card */}
@@ -294,7 +288,7 @@ const Dashboard = () => {
                    </div>
                    <div>
                       <p className="text-[#1A1932] font-bold text-sm tracking-tight">Invest your savings</p>
-                      <p className="text-slate-400 text-xs font-medium">Turn ₹{appliedMonthlySavings.toLocaleString()} into wealth</p>
+                 <p className="text-slate-400 text-xs font-medium">Explore investment growth options</p>
                    </div>
                 </div>
                 <ChevronRight size={18} className="text-slate-300" />

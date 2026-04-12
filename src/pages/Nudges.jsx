@@ -63,12 +63,12 @@ const CompactNudgeCard = ({ nudge, onDismiss, onApply }) => {
       <div className="flex-1">
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-1.5">
-            <p className={`${isApplied ? 'text-slate-400' : isYellow ? 'text-[#CCB44F]' : 'text-[#6366F1]'} text-[10px] font-black uppercase tracking-[0.2em]`}>
+            <p className={`${isApplied ? 'text-slate-400' : isYellow ? 'text-[#CCB44F]' : 'text-[#6366F1]'} text-[11px] font-black uppercase tracking-[0.18em]`}>
               {nudge.type === 'switch' ? 'Optimize' : 'Insight'}
             </p>
             <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full ${isApplied ? 'bg-slate-200 text-slate-400' : 'bg-violet-50 text-violet-500'}`}>
               <Bot size={8} />
-              <span className="text-[7px] font-black uppercase tracking-widest">AI</span>
+              <span className="text-[8px] font-black uppercase tracking-widest">AI</span>
             </div>
           </div>
           {!isApplied && status !== 'confirming' && (
@@ -78,17 +78,17 @@ const CompactNudgeCard = ({ nudge, onDismiss, onApply }) => {
           )}
         </div>
         
-        <p className={`font-black text-[15px] leading-tight mb-2 ${isApplied ? 'text-slate-500 line-through' : 'text-[#1A1932]'}`}>
+        <p className={`font-black text-[18px] leading-tight mb-2 ${isApplied ? 'text-slate-500 line-through' : 'text-[#1A1932]'}`}>
           {nudge.title.split('—')[0]}
         </p>
 
         {/* AI-enhanced description */}
-        <p className={`text-[11px] leading-relaxed font-medium mb-3 transition-opacity ${isApplied ? 'text-slate-400' : 'text-slate-500'} ${aiLoading ? 'opacity-50' : 'opacity-100'}`}>
+        <p className={`text-[14px] leading-relaxed font-medium mb-3 transition-opacity ${isApplied ? 'text-slate-400' : 'text-slate-500'} ${aiLoading ? 'opacity-50' : 'opacity-100'}`}>
           {aiText}
         </p>
 
         <div className={`flex items-center gap-2 mb-4 ${isApplied ? 'opacity-50 filter grayscale' : ''}`}>
-           <span className="text-emerald-500 font-black text-xl savings-glow">Save ₹{nudge.potentialSaving || '400'}</span>
+           <span className="text-emerald-500 font-black text-2xl savings-glow">Save ₹{nudge.potentialSaving || '400'}</span>
            
         </div>
         
@@ -99,14 +99,14 @@ const CompactNudgeCard = ({ nudge, onDismiss, onApply }) => {
               <motion.button 
                 whileTap={{ scale: 0.95 }}
                 onClick={handleApplyClick}
-                className="flex-1 bg-[#6366F1] text-white py-3 rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-indigo-100"
+                className="flex-1 bg-[#6366F1] text-white py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-100"
               >
                 Apply Fix
               </motion.button>
               <motion.button 
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onDismiss(nudge.id)}
-                className="px-5 bg-slate-50 text-slate-400 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest"
+                className="px-5 bg-slate-50 text-slate-400 py-3 rounded-xl font-black text-xs uppercase tracking-widest"
               >
                 Later
               </motion.button>
@@ -143,7 +143,7 @@ const CompactNudgeCard = ({ nudge, onDismiss, onApply }) => {
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="w-full bg-emerald-100/50 text-emerald-600 border border-emerald-200/50 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2"
+              className="w-full bg-emerald-100/50 text-emerald-600 border border-emerald-200/50 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2"
             >
               <Check size={14} strokeWidth={3} /> Applied
             </motion.div>
@@ -180,7 +180,7 @@ const Nudges = () => {
         >
           <ChevronLeft size={20} />
         </motion.button>
-        <h1 className="text-sm font-black text-[#1A1932] uppercase tracking-[0.2em]">Optimization</h1>
+        <h1 className="text-base font-black text-[#1A1932] uppercase tracking-[0.18em]">Optimization</h1>
         <motion.button 
           whileTap={{ rotate: 180 }}
           onClick={refreshNudges} 
@@ -198,9 +198,9 @@ const Nudges = () => {
           className="bg-[#6366F1] rounded-[2.5rem] p-8 text-white mb-10 shadow-2xl shadow-indigo-200 relative overflow-hidden"
         >
           <div className="relative z-10 flex flex-col items-center">
-            <span className="text-white/60 text-[10px] font-black tracking-[0.3em] uppercase mb-4">POTENTIAL GROWTH</span>
+            <span className="text-white/60 text-[11px] font-black tracking-[0.24em] uppercase mb-4">POTENTIAL GROWTH</span>
             <div className="text-4xl font-black mb-2 tracking-tighter">₹{totalSavings.toLocaleString()}</div>
-            <div className="bg-white/20 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+            <div className="bg-white/20 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2">
                Next 30 Days <ArrowRight size={12} />
             </div>
           </div>
@@ -208,7 +208,7 @@ const Nudges = () => {
         </motion.div>
 
         <div className="space-y-4 mb-12">
-          <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-2">Active Nudges</h2>
+          <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.18em] mb-4 px-2">Active Nudges</h2>
           <AnimatePresence mode="popLayout">
             {nudges.length === 0 ? (
               <div className="text-center py-10 flex flex-col items-center">
@@ -249,7 +249,7 @@ const Nudges = () => {
         {/* Applied Changes Section */}
         {appliedNudges.length > 0 && (
           <div className="mb-12">
-            <h2 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-6 px-2">Applied Optimizations</h2>
+            <h2 className="text-xs font-black text-emerald-500 uppercase tracking-[0.18em] mb-6 px-2">Applied Optimizations</h2>
             <div className="space-y-3">
               {appliedNudges.map((nudge) => (
                 <motion.div 
@@ -264,8 +264,8 @@ const Nudges = () => {
                         <Check size={18} strokeWidth={3} />
                       </div>
                       <div>
-                        <p className="font-black text-[#1A1932] text-xs mb-0.5">{nudge.title.split('→')[0]}</p>
-                        <p className="text-emerald-500 font-extrabold text-[10px]">SAVE ₹{nudge.potentialSaving || 99} AMOUNT / MO</p>
+                        <p className="font-black text-[#1A1932] text-sm mb-0.5">{nudge.title.split('→')[0]}</p>
+                        <p className="text-emerald-500 font-extrabold text-xs">SAVE ₹{nudge.potentialSaving || 99} AMOUNT / MO</p>
                       </div>
                     </div>
                     <motion.div
@@ -283,12 +283,12 @@ const Nudges = () => {
                         exit={{ height: 0, opacity: 0 }}
                         className="mt-4 pt-4 border-t border-slate-50"
                       >
-                         <p className="text-slate-500 text-[11px] leading-relaxed font-medium">
+                         <p className="text-slate-500 text-sm leading-relaxed font-medium">
                            {nudge.description}
                          </p>
                          <div className="mt-3 py-2 px-3 bg-emerald-50/50 rounded-xl inline-flex items-center gap-2">
                            <Sparkles size={12} className="text-emerald-500" />
-                           <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Growth Path Active</span>
+                           <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Growth Path Active</span>
                          </div>
                       </motion.div>
                     )}
@@ -310,7 +310,7 @@ const Nudges = () => {
               <Lightbulb size={20} strokeWidth={2.5} />
             </div>
             <div>
-              <p className="text-[#6366F1] text-[9px] font-black uppercase tracking-[0.2em] mb-1">Smart Tip</p>
+              <p className="text-[#6366F1] text-[10px] font-black uppercase tracking-[0.18em] mb-1">Smart Tip</p>
               <p className="text-[#1A1932] font-bold text-sm leading-relaxed">
                 Your saved money could grow by <span className="text-[#6366F1]">12% yearly</span> if invested in stocks instead of sitting idle.
               </p>
@@ -319,7 +319,7 @@ const Nudges = () => {
           <Link to="/investments">
             <motion.button 
               whileTap={{ scale: 0.95 }}
-              className="w-full bg-[#6366F1] text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-100 flex items-center justify-center gap-2"
+              className="w-full bg-[#6366F1] text-white py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-100 flex items-center justify-center gap-2"
             >
               Start Growing <ArrowRight size={14} />
             </motion.button>
@@ -347,7 +347,7 @@ const Nudges = () => {
                 <p className="font-extrabold text-sm mb-0.5 relative z-10">
                   Awesome! Optimization Applied 🎉
                 </p>
-                <p className="text-emerald-400 font-bold text-[10px] uppercase tracking-widest relative z-10">
+                <p className="text-emerald-400 font-bold text-xs uppercase tracking-widest relative z-10">
                   + ₹{lastAppliedNudge.potentialSaving || 0} Added to Monthly Savings
                 </p>
               </div>
