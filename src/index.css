@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-gradient: linear-gradient(135deg, #6366F1 0%, #8D6C92 100%);
+}
+
+@layer base {
+  body {
+    @apply font-inter bg-neutral text-slate-900;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  h1, h2, h3, h4, .font-headline {
+    @apply font-manrope;
+  }
+}
+
+@layer components {
+  .bg-primary-gradient {
+    background: var(--primary-gradient);
+  }
+
+  .text-primary-gradient {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-soft;
+  }
+
+  .nav-blur {
+    @apply bg-white/70 backdrop-blur-lg border-t border-slate-100;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white font-semibold py-3 px-6 rounded-pill shadow-lg shadow-indigo-100 active:scale-95 transition-transform;
+  }
+
+  .input-field {
+    @apply bg-white border border-slate-100 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-primary/20 outline-none font-medium text-sm;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
