@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useStore } from '../store/useStore'
 import { Wallet, GraduationCap } from 'lucide-react'
@@ -73,20 +73,20 @@ const SignUp = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] text-slate-900 flex flex-col p-8 items-center justify-center">
+    <div className="min-h-screen bg-[#F8F9FB] text-slate-900 flex flex-col p-5 items-center justify-center">
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="w-full max-w-sm bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 mt-10"
+        className="w-full max-w-sm bg-white p-6 rounded-[2.2rem] shadow-sm border border-slate-100 mt-4"
       >
-        <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mb-6">
-          <Wallet size={32} />
+        <div className="w-14 h-14 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mb-4">
+          <Wallet size={28} />
         </div>
         
-        <h1 className="text-3xl font-black mb-2 tracking-tight">Sign Up</h1>
-        <p className="text-slate-500 font-medium mb-8 text-sm">Welcome to your smart financial assistant.</p>
+        <h1 className="text-2xl font-black mb-1.5 tracking-tight">Sign Up</h1>
+        <p className="text-slate-500 font-medium mb-6 text-sm">Welcome to your smart financial assistant.</p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
             <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Name</label>
             <input 
@@ -95,7 +95,7 @@ const SignUp = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="E.g. Alex"
-              className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 font-bold text-sm outline-none focus:border-indigo-500 transition-colors"
+              className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-3.5 font-bold text-sm outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
           <div>
@@ -107,7 +107,7 @@ const SignUp = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 6 characters"
-              className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 font-bold text-sm outline-none focus:border-indigo-500 transition-colors"
+              className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-3.5 font-bold text-sm outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
           <div>
@@ -118,7 +118,7 @@ const SignUp = () => {
               value={income}
               onChange={(e) => setIncome(e.target.value)}
               placeholder="₹0"
-              className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 font-bold text-sm outline-none focus:border-indigo-500 transition-colors"
+              className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-3.5 font-bold text-sm outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
 
@@ -130,11 +130,11 @@ const SignUp = () => {
               value={currentBalance}
               onChange={(e) => setCurrentBalance(e.target.value)}
               placeholder="₹0"
-              className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 font-bold text-sm outline-none focus:border-indigo-500 transition-colors"
+              className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-3.5 font-bold text-sm outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
 
-          <div className="flex items-center gap-3 p-2">
+          <div className="flex items-center gap-2.5 p-1">
              <button
               type="button"
               onClick={() => setIncludesSalary(!includesSalary)}
@@ -148,7 +148,7 @@ const SignUp = () => {
              <p className="text-slate-500 font-bold text-xs">Does this balance include your monthly salary?</p>
           </div>
           
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isStudent ? 'bg-indigo-100 text-[#6366F1]' : 'bg-white text-slate-300 border border-slate-100'}`}>
                 <GraduationCap size={20} />
@@ -171,13 +171,13 @@ const SignUp = () => {
 
           <button 
             type="submit"
-            className="w-full bg-[#6366F1] text-white font-black uppercase tracking-widest text-xs py-4 rounded-2xl active:scale-95 transition-transform mt-4 shadow-lg shadow-indigo-100"
+            className="w-full bg-[#6366F1] text-white font-black uppercase tracking-widest text-xs py-3.5 rounded-2xl active:scale-95 transition-transform mt-2 shadow-lg shadow-indigo-100"
           >
             Continue
           </button>
         </form>
 
-        <p className="mt-8 text-center text-xs font-bold text-slate-400">
+        <p className="mt-6 text-center text-xs font-bold text-slate-400">
           Already have an account? <Link to="/signin" className="text-indigo-500">Sign In</Link>
         </p>
       </motion.div>

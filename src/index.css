@@ -47,12 +47,12 @@
 }
 
 @layer utilities {
-  /* Global readability pass: scale up very small text sizes app-wide */
-  .text-\[7px\] { font-size: 11px !important; line-height: 1.35 !important; }
-  .text-\[8px\] { font-size: 12px !important; line-height: 1.35 !important; }
-  .text-\[9px\] { font-size: 13px !important; line-height: 1.4 !important; }
-  .text-\[10px\] { font-size: 14px !important; line-height: 1.4 !important; }
-  .text-\[11px\] { font-size: 15px !important; line-height: 1.45 !important; }
+  /* Global readability pass: +2px for very small text sizes */
+  .text-\[7px\] { font-size: 9px !important; line-height: 1.35 !important; }
+  .text-\[8px\] { font-size: 10px !important; line-height: 1.35 !important; }
+  .text-\[9px\] { font-size: 11px !important; line-height: 1.4 !important; }
+  .text-\[10px\] { font-size: 12px !important; line-height: 1.4 !important; }
+  .text-\[11px\] { font-size: 13px !important; line-height: 1.45 !important; }
 
   .text-xs { font-size: 14px !important; line-height: 1.4 !important; }
   .text-sm { font-size: 16px !important; line-height: 1.45 !important; }

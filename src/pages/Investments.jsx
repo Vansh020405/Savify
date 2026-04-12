@@ -62,10 +62,10 @@ const Investments = () => {
   const threeYears = calculateFutureValue(suggestedMonthlyInvestment, 3, 0.12)
   const fiveYears = calculateFutureValue(suggestedMonthlyInvestment, 5, 0.12)
   const parsedMonthlyDeposit = Math.max(0, toSafeNumber(monthlyDepositInput))
-  const effectiveMonthlyDeposit = hasBehaviorHistory
-    ? (parsedMonthlyDeposit > 0 ? parsedMonthlyDeposit : suggestedMonthlyInvestment)
-    : 0
-  const potentialGrowth = hasBehaviorHistory ? calculateFutureValue(effectiveMonthlyDeposit, selectedTenure, 0.12) : 0
+  const effectiveMonthlyDeposit = parsedMonthlyDeposit > 0 ? parsedMonthlyDeposit : suggestedMonthlyInvestment
+  const potentialGrowth = calculateFutureValue(effectiveMonthlyDeposit, selectedTenure, 0.12)
+  const totalInvested = effectiveMonthlyDeposit * selectedTenure * 12
+  const estimatedGain = Math.max(0, potentialGrowth - totalInvested)
 
   const tenureOptions = [1, 3, 5]
 
@@ -207,9 +207,19 @@ const Investments = () => {
           </div>
 
           <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 mb-4">
-            <p className="text-[10px] text-emerald-700 font-black uppercase tracking-widest mb-1">Potential Growth Amount</p>
+            <p className="text-[10px] text-emerald-700 font-black uppercase tracking-widest mb-1">Predicted Output</p>
             <p className="text-3xl font-black text-emerald-600 tracking-tight"><AnimatedCurrency value={potentialGrowth} /></p>
             <p className="text-[11px] text-emerald-700 font-bold mt-1">{selectedTenure} year estimate at 12% annual return</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="bg-white/80 border border-emerald-100 rounded-xl p-2.5">
+                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Invested</p>
+                <p className="text-sm font-black text-[#1A1932]"><AnimatedCurrency value={totalInvested} /></p>
+              </div>
+              <div className="bg-white/80 border border-emerald-100 rounded-xl p-2.5">
+                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Estimated Gain</p>
+                <p className="text-sm font-black text-emerald-600"><AnimatedCurrency value={estimatedGain} /></p>
+              </div>
+            </div>
           </div>
 
           <div className="rounded-2xl bg-indigo-50 border border-indigo-100 p-4">
