@@ -8,7 +8,7 @@ import { predictCategoryFromText } from '../utils/intelligenceEngine'
 
 const AddExpenseModal = ({ onClose }) => {
   const [amount, setAmount] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('Food')
+  const [selectedCategory, setSelectedCategory] = useState('Other')
   const [note, setNote] = useState('')
   const [detectedCategory, setDetectedCategory] = useState(null)
   const { addExpense, expenses, user } = useStore()
@@ -79,6 +79,7 @@ const AddExpenseModal = ({ onClose }) => {
     setNote(val)
     if (!val.trim()) {
       setDetectedCategory(null)
+      setSelectedCategory('Other')
       return
     }
 
@@ -89,11 +90,12 @@ const AddExpenseModal = ({ onClose }) => {
       expenses,
     })
 
-    if (prediction?.category) {
+    if (prediction?.category && (prediction.confidence || 0) >= 0.45) {
       setSelectedCategory(prediction.category)
       setDetectedCategory(`${prediction.category} (${Math.round((prediction.confidence || 0) * 100)}%)`)
     } else {
       setDetectedCategory(null)
+      setSelectedCategory('Other')
     }
   }
 

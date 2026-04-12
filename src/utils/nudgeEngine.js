@@ -50,6 +50,8 @@ export function generateNudges(expenses, user, appliedNudges = []) {
   const nudges = []
   const appliedIds = new Set(appliedNudges.map(n => n.title)) // Use title for stability during testing
   const allExpenses = expenses.filter(e => e.type === 'expense')
+  const prefs = user?.preferences || {}
+  const normalizedMusicApp = (prefs.musicApp || '').toLowerCase()
   const totalSpend = allExpenses.reduce((s, e) => s + e.amount, 0)
   const income = user.income || 50000
   const currency = user.currency || '₹'
@@ -200,6 +202,78 @@ export function generateNudges(expenses, user, appliedNudges = []) {
   })
 
   // ─── RULE 7: Subscription Switch Suggestions ──────────────────────────────
+
+  if (normalizedMusicApp === 'spotify' && !appliedIds.has('Music Optimization: Spotify')) {
+    nudges.push({
+      id: 'switch-music-spotify-pref',
+      title: 'Music Optimization: Spotify',
+      description: 'You selected Spotify. Compare Apple Music plans and save up to ₹40/month.',
+      type: 'switch',
+      icon: 'refresh',
+      priority: 11.3,
+      potentialSaving: 40,
+      switchInfo: {
+        from: 'Spotify',
+        to: 'Apple Music',
+        savings: 40,
+        message: 'Switch & save ₹40/month',
+      }
+    })
+  }
+
+  if (prefs.paysOttSeparately && !appliedIds.has('OTT Consolidation Plan')) {
+    nudges.push({
+      id: 'switch-ott-bundle-pref',
+      title: 'OTT Consolidation Plan',
+      description: 'Since you pay OTTs separately, a bundled plan can reduce monthly bills by around ₹299.',
+      type: 'switch',
+      icon: 'refresh',
+      priority: 11.2,
+      potentialSaving: 299,
+      switchInfo: {
+        from: 'Separate OTT Subscriptions',
+        to: 'OTT Bundle Plan',
+        savings: 299,
+        message: 'Consolidate and save ₹299/month',
+      }
+    })
+  }
+
+  if (prefs.spendPreference === 'food' && !appliedIds.has('Food Preference Optimization')) {
+    nudges.push({
+      id: 'switch-pref-food',
+      title: 'Food Preference Optimization',
+      description: 'You prefer food spends. Replace 1-2 delivery orders/week with meal prep to save more.',
+      type: 'switch',
+      icon: 'food',
+      priority: 10.9,
+      potentialSaving: 900,
+      switchInfo: {
+        from: 'Frequent Delivery',
+        to: 'Meal Prep + Offers',
+        savings: 900,
+        message: 'Save around ₹900/month',
+      }
+    })
+  }
+
+  if (prefs.spendPreference === 'shopping' && !appliedIds.has('Shopping Preference Optimization')) {
+    nudges.push({
+      id: 'switch-pref-shopping',
+      title: 'Shopping Preference Optimization',
+      description: 'You prefer shopping spends. Try wishlist delay + price alerts to prevent impulse buys.',
+      type: 'switch',
+      icon: 'shopping',
+      priority: 10.9,
+      potentialSaving: 1200,
+      switchInfo: {
+        from: 'Impulse Checkouts',
+        to: 'Price Alerts + 48h Rule',
+        savings: 1200,
+        message: 'Trim shopping by ~₹1,200/month',
+      }
+    })
+  }
 
   // Spotify -> Apple Music
   const spotifyExp = allExpenses.find(e => e.title.toLowerCase().includes('spotify'))

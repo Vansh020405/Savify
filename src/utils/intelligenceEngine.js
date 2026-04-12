@@ -10,6 +10,67 @@ function tokenize(value = '') {
   return norm.split(' ').filter(Boolean)
 }
 
+const KEYWORD_CATEGORY_RULES = [
+  {
+    category: 'Food',
+    keywords: ['swiggy', 'zomato', 'uber eats', 'dinner', 'lunch', 'breakfast', 'snack', 'restaurant', 'cafe', 'pizza', 'burger', 'meal', 'food', 'coffee'],
+  },
+  {
+    category: 'Travel',
+    keywords: ['uber', 'ola', 'rapido', 'metro', 'bus', 'train', 'flight', 'fuel', 'petrol', 'diesel', 'cab', 'taxi', 'travel', 'commute', 'ticket'],
+  },
+  {
+    category: 'Shopping',
+    keywords: ['amazon', 'flipkart', 'myntra', 'ajio', 'shopping', 'mall', 'order', 'purchase', 'clothes', 'shoes', 'grocery'],
+  },
+  {
+    category: 'Bills',
+    keywords: ['bill', 'electricity', 'water', 'rent', 'internet', 'wifi', 'broadband', 'phone bill', 'maintenance', 'gas bill'],
+  },
+  {
+    category: 'Subscription',
+    keywords: ['subscription', 'netflix', 'spotify', 'prime', 'hotstar', 'youtube premium', 'apple music', 'renewal'],
+  },
+  {
+    category: 'Health',
+    keywords: ['pharmacy', 'medicine', 'doctor', 'clinic', 'hospital', 'health', 'test', 'lab', 'medical', 'gym'],
+  },
+  {
+    category: 'Entertainment',
+    keywords: ['movie', 'cinema', 'game', 'gaming', 'concert', 'show', 'party', 'entertainment'],
+  },
+]
+
+function predictFromKeywords(normalizedText) {
+  if (!normalizedText) return null
+
+  let bestCategory = null
+  let bestScore = 0
+
+  for (const rule of KEYWORD_CATEGORY_RULES) {
+    let score = 0
+    for (const phrase of rule.keywords) {
+      if (normalizedText.includes(phrase)) {
+        score += phrase.includes(' ') ? 2 : 1
+      }
+    }
+
+    if (score > bestScore) {
+      bestScore = score
+      bestCategory = rule.category
+    }
+  }
+
+  if (!bestCategory) return null
+
+  return {
+    category: bestCategory,
+    confidence: Math.min(0.92, 0.62 + bestScore * 0.07),
+    reason: 'Detected from note keywords',
+    alternatives: [],
+  }
+}
+
 function dayKey(ts) {
   const d = new Date(ts)
   d.setHours(0, 0, 0, 0)
@@ -92,9 +153,32 @@ export function predictCategoryFromText({ text, amount = 0, timestamp = Date.now
     }
   }
 
+  const keywordPrediction = predictFromKeywords(normalizedTitle)
+  if (keywordPrediction) {
+    return keywordPrediction
+  }
+
   const tokens = tokenize(text)
+  if (!tokens.length) {
+    return {
+      category: 'Other',
+      confidence: 0,
+      reason: 'No note text to infer category',
+      alternatives: [],
+    }
+  }
+
   const vocabSize = Math.max(1, new Set(Object.values(categoryStats).flatMap((s) => Object.keys(s.tokenCounts))).size)
   const totalLabeled = Object.values(categoryStats).reduce((s, v) => s + v.count, 0)
+
+  if (totalLabeled === 0) {
+    return {
+      category: 'Other',
+      confidence: 0.32,
+      reason: 'Need a few transactions to learn your spending patterns',
+      alternatives: categories.filter((c) => c !== 'Other').slice(0, 3),
+    }
+  }
 
   const scores = categories.map((category) => {
     const stats = categoryStats[category]
@@ -127,6 +211,15 @@ export function predictCategoryFromText({ text, amount = 0, timestamp = Date.now
 
   const best = scores[0]
   const second = scores[1]
+  if (second && Math.abs(best.logScore - second.logScore) < 0.01) {
+    return {
+      category: 'Other',
+      confidence: 0.38,
+      reason: 'Could not confidently distinguish category from current data',
+      alternatives: scores.slice(0, 3).map((s) => s.category),
+    }
+  }
+
   const confidence = second ? Math.min(0.95, Math.max(0.35, 0.5 + (best.logScore - second.logScore) / 6)) : 0.55
 
   return {
