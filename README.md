@@ -36,10 +36,12 @@ npm run dev
 
 The app uses a local server for policy document analysis and market summary data.
 
-1) Set the API keys in your shell environment
+1) Create a .env file for API keys
+
+Copy .env.example to .env and fill in your keys.
 ```bash
-set OPENAI_API_KEY=your_key_here
-set ALPHAVANTAGE_API_KEY=your_key_here
+OPENAI_API_KEY=your_key_here
+ALPHAVANTAGE_API_KEY=your_key_here
 ```
 
 2) Run the server
