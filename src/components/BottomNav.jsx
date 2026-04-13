@@ -1,4 +1,4 @@
-import { Home, History, Plus, TrendingUp, User } from 'lucide-react'
+import { Home, History, Plus, TrendingUp, Shield } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -15,7 +15,7 @@ const BottomNav = ({ onAddClick }) => {
     { icon: History, label: 'HISTORY', path: '/transactions' },
     { icon: Plus, label: '', path: null, isAction: true },
     { icon: TrendingUp, label: 'INVEST', path: '/investments' },
-    { icon: User, label: 'PROFILE', path: '/profile' },
+    { icon: Shield, label: 'INSURE', path: '/insurance' },
   ]
 
   return (

@@ -14,6 +14,17 @@ const initialUser = {
   savingsGoal: 15000,
   isStudent: false, // For smart scholarship/plan detection
   avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Vansh',
+  insuranceProfile: {
+    age: 28,
+    city: 'Bengaluru',
+    budget: 1200,
+    tags: 'Non-smoker · Salaried · No dependents',
+  },
+  investmentProfile: {
+    income: 0,
+    expenses: 0,
+    savings: 0,
+  },
   preferences: {
     musicApp: 'Spotify',
     paysOttSeparately: true,
@@ -29,6 +40,7 @@ const syncToFirebase = (state) => {
     body: JSON.stringify({
       user: state.user,
       expenses: state.expenses,
+      investmentLog: state.investmentLog,
       appliedNudges: state.appliedNudges,
       appliedMonthlySavings: state.appliedMonthlySavings,
       lastSalaryMonth: state.lastSalaryMonth
@@ -68,6 +80,16 @@ export const useStore = create(
           expenses: newExpenses,
           // Auto-recalculate nudges on every new expense
           nudges: generateNudges(newExpenses, state.user, state.appliedNudges),
+        }
+        syncToFirebase({ ...state, ...newState })
+        return newState
+      }),
+
+      investmentLog: [],
+      addInvestment: (investment) => set((state) => {
+        const entry = { ...investment, id: Date.now() }
+        const newState = {
+          investmentLog: [entry, ...state.investmentLog],
         }
         syncToFirebase({ ...state, ...newState })
         return newState

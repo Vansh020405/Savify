@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { Settings, CreditCard, Shield, HelpCircle, LogOut, ChevronRight } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useStore } from '../store/useStore'
 
 const ProfileItem = ({ icon: Icon, label, value, color }) => (
@@ -18,7 +19,31 @@ const ProfileItem = ({ icon: Icon, label, value, color }) => (
 )
 
 const Profile = () => {
-  const { user, logout } = useStore()
+  const { user, logout, setUser } = useStore()
+  const initialInsuranceProfile = useMemo(() => ({
+    age: user.insuranceProfile?.age || 28,
+    city: user.insuranceProfile?.city || 'Bengaluru',
+    budget: user.insuranceProfile?.budget || 1200,
+    tags: user.insuranceProfile?.tags || 'Non-smoker · Salaried · No dependents',
+  }), [user.insuranceProfile])
+  const [insuranceProfile, setInsuranceProfile] = useState(initialInsuranceProfile)
+
+  const handleInsuranceChange = (field, value) => {
+    setInsuranceProfile((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const handleInsuranceSave = () => {
+    const cleaned = {
+      age: Number(insuranceProfile.age) || 0,
+      city: insuranceProfile.city.trim(),
+      budget: Number(insuranceProfile.budget) || 0,
+      tags: insuranceProfile.tags.trim(),
+    }
+    setUser({ insuranceProfile: cleaned })
+  }
 
   return (
     <div className="p-6">
@@ -47,6 +72,56 @@ const Profile = () => {
             <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest block mb-1">Savings</span>
             <span className="text-lg font-black text-emerald-500">₹15,000</span>
         </div>
+      </div>
+
+      <div className="bg-white rounded-[2rem] p-6 shadow-soft border border-slate-50 mb-10">
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Insurance snapshot</p>
+        <h3 className="text-lg font-black text-slate-900 mt-2">Edit policy profile</h3>
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <div>
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Age</p>
+            <input
+              type="number"
+              value={insuranceProfile.age}
+              onChange={(event) => handleInsuranceChange('age', event.target.value)}
+              className="mt-2 w-full rounded-2xl border border-slate-100 bg-white px-4 py-3 text-sm font-semibold text-slate-900"
+            />
+          </div>
+          <div>
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">City</p>
+            <input
+              type="text"
+              value={insuranceProfile.city}
+              onChange={(event) => handleInsuranceChange('city', event.target.value)}
+              className="mt-2 w-full rounded-2xl border border-slate-100 bg-white px-4 py-3 text-sm font-semibold text-slate-900"
+            />
+          </div>
+          <div>
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Monthly budget</p>
+            <input
+              type="number"
+              value={insuranceProfile.budget}
+              onChange={(event) => handleInsuranceChange('budget', event.target.value)}
+              className="mt-2 w-full rounded-2xl border border-slate-100 bg-white px-4 py-3 text-sm font-semibold text-slate-900"
+            />
+          </div>
+          <div className="col-span-2">
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Life tags</p>
+            <input
+              type="text"
+              value={insuranceProfile.tags}
+              onChange={(event) => handleInsuranceChange('tags', event.target.value)}
+              className="mt-2 w-full rounded-2xl border border-slate-100 bg-white px-4 py-3 text-sm font-semibold text-slate-900"
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleInsuranceSave}
+          className="mt-5 w-full rounded-2xl bg-[#6366F1] text-white py-3 text-[11px] font-black uppercase tracking-widest"
+        >
+          Save insurance profile
+        </button>
       </div>
 
       {/* Settings List */}

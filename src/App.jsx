@@ -9,6 +9,10 @@ import SignUp from './pages/SignUp'
 import SignIn from './pages/SignIn'
 import Onboarding from './pages/Onboarding'
 import Investments from './pages/Investments'
+import InsuranceHome from './pages/InsuranceHome'
+import InsuranceHabits from './pages/InsuranceHabits'
+import InsurancePolicyDetail from './pages/InsurancePolicyDetail'
+import PolicyAnalyzer from './pages/PolicyAnalyzer'
 import { useStore } from './store/useStore'
 import { useEffect } from 'react'
 
@@ -44,6 +48,10 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/nudges" element={<Nudges />} />
           <Route path="/investments" element={<Investments />} />
+          <Route path="/insurance" element={<InsuranceHome />} />
+          <Route path="/insurance/habits" element={<InsuranceHabits />} />
+          <Route path="/insurance/:policyId" element={<InsurancePolicyDetail />} />
+          <Route path="/policy-analyzer" element={<PolicyAnalyzer />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AnimatePresence>

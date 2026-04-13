@@ -10,7 +10,9 @@ export const stocks = [
 ];
 
 const fallbackQuotes = {
+  'ZOMATO.NS': { current: 242.15, change: 12.05, percent: 5.2 },
   'RELIANCE.NS': { current: 2928.45, change: 18.35, percent: 0.63 },
+  'TATAMOTORS.NS': { current: 954.2, change: -23.45, percent: -2.4 },
   'TCS.NS': { current: 4179.2, change: -26.7, percent: -0.63 },
   'NIFTYBEES.NS': { current: 259.8, change: 1.95, percent: 0.76 },
   'HDFCBANK.NS': { current: 1643.55, change: 9.45, percent: 0.58 },
