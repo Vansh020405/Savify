@@ -32,7 +32,7 @@ const toneStyles = {
 
 const PolicyAnalyzer = () => {
   return (
-    <div className="min-h-screen bg-[#F8F9FB] px-6 py-6 pb-28">
+    <div className="investments-sip-font min-h-screen bg-[#F8F9FB] px-6 py-6 pb-28">
       <header className="mb-6">
         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Policy Analyzer</p>
         <h1 className="text-4xl font-black tracking-tight text-[#232734] mt-2">Instant Policy Verdict</h1>

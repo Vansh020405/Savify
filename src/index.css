@@ -10,6 +10,11 @@
 @layer base {
   *, *::before, *::after {
     font-family: var(--sf-pro-stack) !important;
+    font-size: 16px !important;
+    line-height: 1.45 !important;
+    font-weight: 600 !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
   }
 
   body {
@@ -47,6 +52,16 @@
 }
 
 @layer utilities {
+  .investments-sip-font,
+  .investments-sip-font * {
+    font-family: var(--sf-pro-stack) !important;
+    font-size: 16px !important;
+    line-height: 1.45 !important;
+    font-weight: 600 !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+  }
+
   /* Global readability pass: +2px for very small text sizes */
   .text-\[7px\] { font-size: 9px !important; line-height: 1.35 !important; }
   .text-\[8px\] { font-size: 10px !important; line-height: 1.35 !important; }

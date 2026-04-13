@@ -55,7 +55,7 @@ const InsurancePolicyDetail = () => {
 
   if (!policy) {
     return (
-      <div className="min-h-screen bg-[#F8F9FB] px-6 py-6">
+      <div className="investments-sip-font min-h-screen bg-[#F8F9FB] px-6 py-6">
         <button type="button" onClick={() => navigate('/insurance')} className="text-indigo-600 text-sm font-bold">Back</button>
         <p className="mt-6 text-slate-700 font-bold">Policy not found.</p>
       </div>
@@ -65,7 +65,7 @@ const InsurancePolicyDetail = () => {
   const showComparison = analysisResult && analysisResult.planName && analysisResult.planName !== policy.name
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] px-6 py-6 pb-36">
+    <div className="investments-sip-font min-h-screen bg-[#F8F9FB] px-6 py-6 pb-36">
       <header className="mb-6">
         <button type="button" onClick={() => navigate('/insurance')} className="flex items-center gap-2 text-indigo-600 text-[12px] font-black uppercase">
           <ArrowLeft size={14} />

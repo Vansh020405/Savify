@@ -251,7 +251,7 @@ const Investments = () => {
   }, [marketData, safeAmount])
 
   return (
-    <div className="bg-[#F8F9FB] min-h-screen pb-28">
+    <div className="investments-sip-font bg-[#F8F9FB] min-h-screen pb-28">
       <header className="sticky top-0 z-20 px-6 py-4 bg-[#F8F9FB]/85 backdrop-blur-lg border-b border-[#EEF1F4]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -336,15 +336,15 @@ const Investments = () => {
 
             <div className="grid grid-cols-3 gap-2 mt-4">
               <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
-                <p className="text-[10px] text-slate-500 font-black uppercase">Income</p>
+                <p className="text-[10px] text-slate-500 font-black uppercase">Monthly income</p>
                 <p className="text-sm font-black text-slate-900">{formatCurrency(income)}</p>
               </div>
               <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
-                <p className="text-[10px] text-slate-500 font-black uppercase">Expenses</p>
+                <p className="text-[10px] text-slate-500 font-black uppercase">Monthly expenses</p>
                 <p className="text-sm font-black text-slate-900">{formatCurrency(fixedExpenses)}</p>
               </div>
               <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
-                <p className="text-[10px] text-slate-500 font-black uppercase">Savings buffer</p>
+                <p className="text-[10px] text-slate-500 font-black uppercase">Current savings buffer</p>
                 <p className="text-sm font-black text-slate-900">{formatCurrency(savings)}</p>
               </div>
             </div>
