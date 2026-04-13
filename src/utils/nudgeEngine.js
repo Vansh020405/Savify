@@ -1,3 +1,5 @@
+import { ottDataset } from './ottDataset'
+
 /**
  * Savify Nudge Engine
  * Analyzes expense data and generates behavioral nudges.
@@ -5,6 +7,129 @@
  */
 
 const MS_PER_DAY = 86400000
+
+const ottServiceMatchers = [
+  { name: 'Netflix', patterns: ['netflix'] },
+  { name: 'Amazon Prime Video', patterns: ['amazon prime video', 'prime video', 'amazon prime', 'primevideo'] },
+  { name: 'Disney+ Hotstar', patterns: ['disney+ hotstar', 'disney hotstar', 'hotstar'] },
+  { name: 'Spotify', patterns: ['spotify'] },
+  { name: 'YouTube Premium', patterns: ['youtube premium', 'yt premium', 'youtubepremium'] },
+]
+
+function normalizeServiceName(value = '') {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+function buildPlatformMonthlyPriceMap() {
+  const map = new Map()
+  for (const platform of ottDataset.platforms || []) {
+    const monthly = platform.type === 'yearly'
+      ? Math.max(1, Math.round(platform.price / 12))
+      : platform.price
+    const key = normalizeServiceName(platform.name)
+    const existing = map.get(key)
+    if (!existing || monthly < existing) {
+      map.set(key, monthly)
+    }
+  }
+  return map
+}
+
+const platformMonthlyPriceMap = buildPlatformMonthlyPriceMap()
+
+function getBundleMonthlyPrice(bundle) {
+  const name = bundle?.name || ''
+  if (/amazon prime/i.test(name) && bundle.price >= 1000) {
+    return Math.max(1, Math.round(bundle.price / 12))
+  }
+  if (/jio/i.test(name) && bundle.price >= 1000) {
+    return Math.max(1, Math.round(bundle.price / 12))
+  }
+  return bundle.price
+}
+
+function detectServicesFromExpenses(expenses) {
+  const found = new Set()
+  for (const expense of expenses) {
+    if (expense.type !== 'expense') continue
+    const normalizedTitle = normalizeServiceName(expense.title || '')
+    if (!normalizedTitle) continue
+
+    for (const matcher of ottServiceMatchers) {
+      for (const pattern of matcher.patterns) {
+        const normalizedPattern = normalizeServiceName(pattern)
+        if (normalizedTitle.includes(normalizedPattern)) {
+          found.add(matcher.name)
+          break
+        }
+      }
+    }
+  }
+  return [...found]
+}
+
+function addSurveyServices(prefs, serviceSet) {
+  const musicApp = (prefs.musicApp || '').toLowerCase()
+  if (musicApp.includes('spotify')) {
+    serviceSet.add('Spotify')
+  }
+  if (musicApp.includes('youtube')) {
+    serviceSet.add('YouTube Premium')
+  }
+}
+
+function estimateMonthlyServiceSpend(services) {
+  return services.reduce((sum, service) => {
+    const price = platformMonthlyPriceMap.get(normalizeServiceName(service))
+    return sum + (price || 0)
+  }, 0)
+}
+
+function pickBestBundle(services) {
+  const normalizedServices = services.map((service) => normalizeServiceName(service))
+
+  const scored = (ottDataset.bundles || []).map((bundle) => {
+    const includes = (bundle.includes || []).map((item) => normalizeServiceName(item))
+    const matchCount = normalizedServices.reduce((count, service) => {
+      return count + (includes.some((inc) => inc.includes(service) || service.includes(inc)) ? 1 : 0)
+    }, 0)
+    return {
+      ...bundle,
+      monthlyPrice: getBundleMonthlyPrice(bundle),
+      matchCount,
+    }
+  })
+
+  const filtered = scored.filter((bundle) => bundle.matchCount > 0)
+  if (!filtered.length) return null
+
+  return filtered.sort((a, b) => {
+    if (b.matchCount !== a.matchCount) return b.matchCount - a.matchCount
+    return a.monthlyPrice - b.monthlyPrice
+  })[0]
+}
+
+function pickBestWifiPlan(services) {
+  const normalizedServices = services.map((service) => normalizeServiceName(service))
+  const scored = (ottDataset.wifiPlans || []).map((plan) => {
+    const includes = (plan.includes || []).map((item) => normalizeServiceName(item))
+    const matchCount = normalizedServices.reduce((count, service) => {
+      return count + (includes.some((inc) => inc.includes(service) || service.includes(inc)) ? 1 : 0)
+    }, 0)
+    return {
+      ...plan,
+      matchCount,
+    }
+  })
+
+  const filtered = scored.filter((plan) => plan.matchCount > 0)
+  if (!filtered.length) return null
+
+  return filtered.sort((a, b) => {
+    if (b.matchCount !== a.matchCount) return b.matchCount - a.matchCount
+    return a.price - b.price
+  })[0]
+}
 
 /** Returns total spend for expenses in a given category */
 function categoryTotal(expenses, category) {
@@ -221,22 +346,62 @@ export function generateNudges(expenses, user, appliedNudges = []) {
     })
   }
 
-  if (prefs.paysOttSeparately && !appliedIds.has('OTT Consolidation Plan')) {
-    nudges.push({
-      id: 'switch-ott-bundle-pref',
-      title: 'OTT Consolidation Plan',
-      description: 'Since you pay OTTs separately, a bundled plan can reduce monthly bills by around ₹299.',
-      type: 'switch',
-      icon: 'refresh',
-      priority: 11.2,
-      potentialSaving: 299,
-      switchInfo: {
-        from: 'Separate OTT Subscriptions',
-        to: 'OTT Bundle Plan',
-        savings: 299,
-        message: 'Consolidate and save ₹299/month',
+  if (prefs.paysOttSeparately && !appliedIds.has('OTT Survey: Bundle Match')) {
+    const serviceSet = new Set(detectServicesFromExpenses(allExpenses))
+    addSurveyServices(prefs, serviceSet)
+    const services = [...serviceSet]
+    const monthlySum = estimateMonthlyServiceSpend(services)
+    const bestBundle = pickBestBundle(services)
+
+    if (bestBundle && monthlySum > 0) {
+      const savings = Math.max(0, Math.round(monthlySum - bestBundle.monthlyPrice))
+      if (savings >= 50) {
+        nudges.push({
+          id: 'switch-ott-bundle-survey',
+          title: 'OTT Survey: Bundle Match',
+          description: `Based on your survey, switching to ${bestBundle.name} could cut your OTT bill by about ${currency}${savings}/month.`,
+          type: 'switch',
+          icon: 'refresh',
+          priority: 11.2,
+          potentialSaving: savings,
+          switchInfo: {
+            from: 'Separate OTT Subscriptions',
+            to: bestBundle.name,
+            savings,
+            message: `Consolidate and save ${currency}${savings}/month`,
+          }
+        })
       }
-    })
+    }
+  }
+
+  if (prefs.paysOttSeparately && !appliedIds.has('OTT Survey: WiFi Bundle')) {
+    const serviceSet = new Set(detectServicesFromExpenses(allExpenses))
+    addSurveyServices(prefs, serviceSet)
+    const services = [...serviceSet]
+    const monthlySum = estimateMonthlyServiceSpend(services)
+    const bestWifiPlan = pickBestWifiPlan(services)
+
+    if (bestWifiPlan && monthlySum > bestWifiPlan.price) {
+      const savings = Math.max(0, Math.round(monthlySum - bestWifiPlan.price))
+      if (savings >= 100) {
+        nudges.push({
+          id: 'switch-ott-wifi-survey',
+          title: 'OTT Survey: WiFi Bundle',
+          description: `A ${bestWifiPlan.provider} ${bestWifiPlan.speed} plan could cover your OTTs and save around ${currency}${savings}/month.`,
+          type: 'switch',
+          icon: 'refresh',
+          priority: 11.1,
+          potentialSaving: savings,
+          switchInfo: {
+            from: 'Separate OTT Subscriptions',
+            to: `${bestWifiPlan.provider} ${bestWifiPlan.speed}`,
+            savings,
+            message: `Bundle OTTs + WiFi and save ${currency}${savings}/month`,
+          }
+        })
+      }
+    }
   }
 
   if (prefs.spendPreference === 'food' && !appliedIds.has('Food Preference Optimization')) {
