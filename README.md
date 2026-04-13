@@ -1,45 +1,60 @@
-# Savify ✨
+# Savify
 
-**Savify** is a premium, AI-driven personal financial assistant designed to bring clarity and intelligence to your money without the stress. Built with cutting-edge React patterns and a mobile-first philosophy, Savify completely automates balance tracking, predicts your spending habits, and actively guides you toward financial independence.
+Savify is a mobile-first personal finance assistant with guided money insights, a personalized investment cockpit, and a policy hub that analyzes insurance documents.
 
-## 🚀 Key Features
+## Key Features
 
-- **Proactive AI Decision Engine**: Every expense you add calculates *instantaneous* impacts against your savings capacity and visually warns you if an impulsive purchase will delay your long-term goals.
-- **Smart Automated Ledger**: Define your income once during onboarding. Savify invisibly tracks month-to-month rollovers, auto-crediting your salary and dynamically updating available balances.
-- **Guided "Switch Nudges"**: Uses intelligent state machines to suggest replacing bad financial habits with better ones (e.g., swapping Uber for public transit). Features interactive modals teaching users how much they save.
-- **Investments Tracker**: Recommends SIP allocations and models 1-to-5 year wealth projections based on compound growth logic immediately after you lock in daily savings.
-- **Ultra-Premium Native Feel**: Crafted entirely from scratch using `Framer Motion` for 120fps state-driven animations, custom `SF Pro` typography, and stunning Tailwind CSS aesthetics. Completely cardless UI tailored for mobile ergonomics.
+- Investment cockpit that derives income, expenses, and savings from signup + transactions, then calculates safe-to-invest, emergency fund status, and risk tier.
+- Actionable allocation split with expandable rationale for each bucket.
+- Live market cards with refresh, profile-fit badges, and expandable details.
+- Investment log with running total and gain/loss summary.
+- Policy hub with personalized policy feed, policy detail analyzer, and habit-matched policy list.
+- Policy upload analyzer that extracts plan details and plain-English insights.
 
-## 🛠 Tech Stack
+## Tech Stack
 
-- **Framework**: [React 18](https://reactjs.org/) & [Vite](https://vitejs.dev/)
-- **State Management**: [Zustand](https://github.com/pmndrs/zustand) (with persistent local storage integration)
-- **Styling**: [Tailwind CSS v3](https://tailwindcss.com/)
-- **Animations**: [Framer Motion](https://www.framer.com/motion/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **AI Intelligence Integration**: API-compatible nudge engine mapped designed alongside deep predictive algorithms
+- React 18 + Vite
+- Zustand (persisted local state)
+- Tailwind CSS
+- Framer Motion
+- Lucide React
+- Node.js + Express (server proxy for document and market analysis)
 
-## 📦 Quick Start
+## Quick Start
 
-1. Clone the repository and navigate to the project directory:
-   ```bash
-   cd savify
-   ```
-2. Install the core dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the development server precisely simulating mobile dimensions in your browser:
-   ```bash
-   npm run dev
-   ```
+1) Install dependencies
+```bash
+npm install
+```
 
-## 🏗 Architecture Insights
+2) Start the web app
+```bash
+npm run dev
+```
 
-The application strips away complex dashboard layouts to implement a localized `BottomNav` flow handling:
-- `/` - **Dashboard**: Quick snapshot of current funds, recent expenses, and dynamic progress bar modeling spending against auto-counted income.
-- `/transactions` - **Activity**: Deep structural view mapping the expense and income timeline.
-- `/investments` - **Growth**: Projections and guided portfolio breakdowns prioritizing 12-to-15% index yields.
-- `/profile` - **Settings**: Account operations, bank bindings, and secure local session wipes.
+## Server Setup (Policy Analyzer + Market Summary)
 
-> Designed to turn finance from a chore into a deep breath. 🍃
+The app uses a local server for policy document analysis and market summary data.
+
+1) Set the API keys in your shell environment
+```bash
+set OPENAI_API_KEY=your_key_here
+set ALPHAVANTAGE_API_KEY=your_key_here
+```
+
+2) Run the server
+```bash
+npm run server
+```
+
+The web app proxies API calls to the server at `http://localhost:5174`.
+
+## Routes
+
+- `/` Dashboard
+- `/transactions` Transactions feed
+- `/investments` Personalized investment cockpit
+- `/insurance` Policy hub feed
+- `/insurance/:policyId` Policy detail + upload analyzer
+- `/insurance/habits` Habit-matched policy list
+- `/profile` Profile + insurance snapshot editor
