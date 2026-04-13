@@ -39,6 +39,8 @@ export default async function handler(req, res) {
 
   try {
     const results = []
+    let emptyQuotes = 0
+    let apiNote = ''
 
     for (const instrument of marketUniverse) {
       const quoteUrl = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(instrument.ticker)}&apikey=${apiKey}`
@@ -50,11 +52,22 @@ export default async function handler(req, res) {
       }
 
       const quoteData = await quoteResponse.json()
+      if (quoteData?.Note) {
+        apiNote = quoteData.Note
+      }
+      if (quoteData?.['Error Message']) {
+        apiNote = quoteData['Error Message']
+      }
+
       const quote = quoteData?.['Global Quote'] || {}
       const price = toNumber(quote['05. price'])
       const changePercentRaw = String(quote['10. change percent'] || '0').replace('%', '')
       const changePercent = toNumber(changePercentRaw)
       const trend = getTrendLabel(changePercent)
+
+      if (price <= 0 && changePercent === 0) {
+        emptyQuotes += 1
+      }
 
       results.push({
         ticker: instrument.ticker,
@@ -64,6 +77,12 @@ export default async function handler(req, res) {
         trend,
         headline: fallbackHeadlines[instrument.ticker] || 'Market update pending.'
       })
+    }
+
+    if (emptyQuotes === marketUniverse.length) {
+      const message = apiNote || 'Alpha Vantage returned empty quotes. Try supported symbols or a different market data provider.'
+      res.status(502).send(message)
+      return
     }
 
     res.status(200).json(results)

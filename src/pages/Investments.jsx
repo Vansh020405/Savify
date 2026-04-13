@@ -394,7 +394,6 @@ const Investments = () => {
           <section className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-[12px] font-black text-[#2D3337] uppercase tracking-[0.18em]">Your money at a glance</h2>
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-500">Based on your profile</span>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-2xl border border-slate-100 bg-white p-3">
@@ -424,7 +423,6 @@ const Investments = () => {
                 <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.16em]">What to do now</p>
                 <h2 className="text-lg font-black text-slate-900 mt-1">Split {formatCurrency(safeAmount)} like this</h2>
               </div>
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-500">Based on your profile</span>
             </div>
             <div className="mt-4">
               <div className="flex h-3 overflow-hidden rounded-full bg-slate-100">
@@ -463,7 +461,6 @@ const Investments = () => {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-[12px] font-black text-[#2D3337] uppercase tracking-[0.18em]">Live market cards</h3>
-              <p className="text-[10px] text-slate-500 font-bold">Based on your profile</p>
             </div>
             <button
               type="button"
@@ -574,7 +571,6 @@ const Investments = () => {
               <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.16em]">Investment log</p>
               <h3 className="text-lg font-black text-slate-900 mt-1">Your investment activity</h3>
             </div>
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-500">Based on your profile</span>
           </div>
 
           <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-3">
@@ -616,7 +612,6 @@ const Investments = () => {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[12px] font-black text-[#2D3337] uppercase tracking-[0.18em]">Avoid right now</h3>
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-500">Based on your profile</span>
           </div>
           <div className="grid gap-3">
             {riskInsights.map((insight, index) => (

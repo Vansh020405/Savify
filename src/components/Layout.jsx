@@ -8,7 +8,7 @@ const Layout = ({ children, hideNav }) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   return (
-    <div className="min-h-screen max-w-md mx-auto bg-[#F8F9FB] relative pb-24 shadow-2xl overflow-x-hidden">
+    <div className="compact-app min-h-screen max-w-md mx-auto bg-[#F8F9FB] relative pb-20 shadow-2xl overflow-x-hidden">
       <PencilTextureFilter />
       
       <motion.main
